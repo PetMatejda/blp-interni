@@ -515,3 +515,82 @@
   color: #ef4444 !important;
   background: #fee2e2 !important;
 }
+
+.receiptActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.viewBtnIcon {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.viewBtnIcon:hover {
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+.imageOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  backdrop-filter: blur(8px);
+}
+
+.imageModal {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imageModal img {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.closeModal {
+  position: absolute;
+  top: -3rem;
+  right: 0;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .receiptRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .rAmount {
+    align-items: flex-start;
+  }
+  
+  .receiptActions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.5rem;
+  }
+}

@@ -15,7 +15,8 @@ import {
   Filter,
   Trash2,
   XCircle,
-  Loader
+  Loader,
+  X
 } from 'lucide-react';
 import styles from './page.module.css';
 import { useAuth } from '@/components/AuthProvider';
@@ -43,6 +44,7 @@ export default function ReceiptsPage() {
   const [step, setStep] = useState<'upload' | 'confirm'>('upload');
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
   
   const isAdmin = profile?.role === 'admin';
   const [adminView, setAdminView] = useState(false); 
@@ -172,6 +174,26 @@ export default function ReceiptsPage() {
     } catch (err) {
       console.error('Chyba při mazání:', err);
       alert('Chyba při mazání účtenky.');
+    }
+  };
+
+  const viewReceiptImage = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('receipts')
+        .select('image_url')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      if (data?.image_url) {
+        setViewingImage(data.image_url);
+      } else {
+        alert('Tato účtenka nemá nahraný obrázek.');
+      }
+    } catch (err) {
+      console.error('Error fetching image:', err);
+      alert('Chyba při načítání obrázku.');
     }
   };
 
@@ -326,11 +348,16 @@ export default function ReceiptsPage() {
                     <div className={`${styles.status} ${styles[r.status]}`}>
                       {r.status === 'pending' ? 'Čeká' : r.status === 'approved' ? 'Schváleno' : r.status === 'rejected' ? 'Zamítnuto' : r.status}
                     </div>
-                    {r.status === 'pending' && (
-                      <button className={styles.deleteBtnIcon} onClick={() => handleDelete(r.id)} title="Smazat účtenku">
-                        <Trash2 size={16} />
+                    <div className={styles.receiptActions}>
+                      <button className={styles.viewBtnIcon} onClick={() => viewReceiptImage(r.id)} title="Zobrazit detail">
+                        <Eye size={16} />
                       </button>
-                    )}
+                      {r.status === 'pending' && (
+                        <button className={styles.deleteBtnIcon} onClick={() => handleDelete(r.id)} title="Smazat účtenku">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -391,7 +418,7 @@ export default function ReceiptsPage() {
                     </td>
                     <td>
                       <div className={styles.actions}>
-                        <button title="Zobrazit detail"><Eye size={16} /></button>
+                        <button title="Zobrazit detail" onClick={() => viewReceiptImage(r.id)}><Eye size={16} /></button>
                         {r.status === 'pending' && (
                           <>
                             <button className={styles.approveBtn} title="Schválit" onClick={() => updateStatus(r.id, 'approved')}><Check size={16} /></button>
@@ -405,6 +432,15 @@ export default function ReceiptsPage() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {viewingImage && (
+        <div className={styles.imageOverlay} onClick={() => setViewingImage(null)}>
+          <div className={styles.imageModal} onClick={e => e.stopPropagation()}>
+            <button className={styles.closeModal} onClick={() => setViewingImage(null)}><X size={24} /></button>
+            <img src={viewingImage} alt="Receipt Detail" />
+          </div>
         </div>
       )}
     </div>
