@@ -99,4 +99,22 @@
   .sidebar {
     transform: translateX(-100%);
   }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .mobileClose {
+    display: flex;
+    background: none;
+    border: none;
+    color: var(--secondary);
+    margin-left: auto;
+    cursor: pointer;
+    padding: 0.5rem;
+  }
+}
+
+.mobileClose {
+  display: none;
 }

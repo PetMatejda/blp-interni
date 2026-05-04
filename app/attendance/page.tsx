@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Play, 
   Square, 
@@ -10,28 +10,33 @@ import {
   Plus
 } from 'lucide-react';
 import styles from './page.module.css';
-
-const ATTENDANCE_TYPES = [
-  'Travel', 
-  'Točba', 
-  'Rigg', 
-  'Sklad', 
-  'Volno M', 
-  'Dovolená', 
-  'Nemoc'
-];
+import { useAttendance } from '@/hooks/useAttendance';
+import { format, differenceInSeconds } from 'date-fns';
+import { cs } from 'date-fns/locale';
 
 export default function AttendancePage() {
-  const [isActive, setIsActive] = useState(false);
+  const { activeSession, history, loading, startSession, endSession } = useAttendance();
   const [selectedType, setSelectedType] = useState('Točba');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [timer, setTimer] = useState('00:00:00');
 
-  const mockRecords = [
-    { date: 'Dnes, 4. 5.', in: '08:32', out: '--', total: '--', type: 'Točba', note: '-' },
-    { date: 'Pátek, 1. 5.', in: '08:15', out: '17:05', total: '8h 50m', type: 'Sklad', note: 'Práce na reklamě' },
-    { date: 'Čtvrtek, 30. 4.', in: '09:00', out: '18:12', total: '9h 12m', type: 'Travel', note: '-' },
-    { date: 'Středa, 29. 4.', in: '08:45', out: '16:30', total: '7h 45m', type: 'Rigg', note: 'Home office' },
-  ];
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (activeSession) {
+      interval = setInterval(() => {
+        const seconds = differenceInSeconds(new Date(), new Date(activeSession.check_in));
+        const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+        const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        setTimer(`${h}:${m}:${s}`);
+      }, 1000);
+    } else {
+      setTimer('00:00:00');
+    }
+    return () => clearInterval(interval);
+  }, [activeSession]);
+
+  const ATTENDANCE_TYPES = ['Travel', 'Točba', 'Rigg', 'Sklad', 'Volno M', 'Dovolená', 'Nemoc'];
 
   return (
     <div className={styles.container}>
@@ -55,16 +60,18 @@ export default function AttendancePage() {
       <div className={styles.actionCard}>
         <div className={styles.timerDisplay}>
           <div className={styles.timerInfo}>
-            <span className={styles.timerLabel}>Dnešní čas</span>
-            <span className={styles.timerValue}>07:45:12</span>
+            <span className={styles.timerLabel}>
+              {activeSession ? `Aktivní: ${activeSession.type}` : 'Dnešní čas'}
+            </span>
+            <span className={styles.timerValue}>{timer}</span>
           </div>
           <div className={styles.typeSelector}>
             <span className={styles.smallLabel}>Typ aktivity:</span>
             <select 
-              value={selectedType} 
+              value={activeSession ? activeSession.type : selectedType} 
               onChange={(e) => setSelectedType(e.target.value)}
               className={styles.select}
-              disabled={isActive}
+              disabled={!!activeSession}
             >
               {ATTENDANCE_TYPES.map(type => (
                 <option key={type} value={type}>{type}</option>
@@ -74,10 +81,10 @@ export default function AttendancePage() {
         </div>
         
         <div className={styles.controls}>
-          {!isActive ? (
+          {!activeSession ? (
             <button 
               className={`${styles.mainBtn} ${styles.btnStart}`}
-              onClick={() => setIsActive(true)}
+              onClick={() => startSession(selectedType)}
             >
               <Play size={24} fill="currentColor" />
               <span>Zahájit: {selectedType}</span>
@@ -85,7 +92,7 @@ export default function AttendancePage() {
           ) : (
             <button 
               className={`${styles.mainBtn} ${styles.btnStop}`}
-              onClick={() => setIsActive(false)}
+              onClick={() => endSession()}
             >
               <Square size={24} fill="currentColor" />
               <span>Ukončit práci</span>
@@ -104,7 +111,7 @@ export default function AttendancePage() {
           <h3>Historie záznamů</h3>
           <div className={styles.dateSelector}>
             <button><ChevronLeft size={20} /></button>
-            <span>Květen 2026</span>
+            <span>{format(new Date(), 'LLLL yyyy', { locale: cs })}</span>
             <button><ChevronRight size={20} /></button>
           </div>
         </div>
@@ -122,20 +129,38 @@ export default function AttendancePage() {
               </tr>
             </thead>
             <tbody>
-              {mockRecords.map((record, index) => (
-                <tr key={index}>
-                  <td>{record.date}</td>
-                  <td>
-                    <span className={`${styles.typeBadge} ${styles[`type${record.type.replace(' ', '')}`]}`}>
-                      {record.type}
-                    </span>
-                  </td>
-                  <td className={styles.timeCell}>{record.in}</td>
-                  <td className={styles.timeCell}>{record.out}</td>
-                  <td className={styles.totalCell}>{record.total}</td>
-                  <td className={styles.noteCell}>{record.note}</td>
+              {history.length === 0 && !loading && (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>Zatím žádné záznamy</td>
                 </tr>
-              ))}
+              )}
+              {history.map((record) => {
+                const checkIn = new Date(record.check_in);
+                const checkOut = record.check_out ? new Date(record.check_out) : null;
+                let duration = '--';
+                
+                if (checkOut) {
+                  const diff = differenceInSeconds(checkOut, checkIn);
+                  const h = Math.floor(diff / 3600);
+                  const m = Math.floor((diff % 3600) / 60);
+                  duration = `${h}h ${m}m`;
+                }
+
+                return (
+                  <tr key={record.id}>
+                    <td>{format(checkIn, 'eeee, d. M.', { locale: cs })}</td>
+                    <td>
+                      <span className={`${styles.typeBadge} ${styles[`type${record.type.replace(' ', '')}`]}`}>
+                        {record.type}
+                      </span>
+                    </td>
+                    <td className={styles.timeCell}>{format(checkIn, 'HH:mm')}</td>
+                    <td className={styles.timeCell}>{checkOut ? format(checkOut, 'HH:mm') : '--'}</td>
+                    <td className={styles.totalCell}>{duration}</td>
+                    <td className={styles.noteCell}>{record.comment || '-'}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

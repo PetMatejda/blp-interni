@@ -3,12 +3,20 @@
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Menu, X } from "lucide-react";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const pathname = usePathname();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
   const isLoginPage = pathname === '/login';
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [pathname]);
 
   if (loading) {
     return (
@@ -38,10 +46,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="app-container">
-      <Sidebar />
+      <div className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)}></div>
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <main className="main-content">
         <header className="main-header">
           <div className="header-content">
+            <button className="mobile-toggle" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+              {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
             <h1>{
               pathname === '/' ? 'Dashboard' : 
               pathname === '/attendance' ? 'Docházka' : 
@@ -79,6 +91,29 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           margin-left: 260px;
           display: flex;
           flex-direction: column;
+          min-width: 0;
+        }
+        
+        .mobile-toggle {
+          display: none;
+          background: none;
+          border: none;
+          color: var(--foreground);
+          cursor: pointer;
+          padding: 0.5rem;
+          margin-right: 0.5rem;
+        }
+
+        .sidebar-overlay {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 45;
+          backdrop-filter: blur(4px);
         }
         
         .main-header {
@@ -144,6 +179,21 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         @media (max-width: 768px) {
           .main-content {
             margin-left: 0;
+          }
+          .mobile-toggle {
+            display: block;
+          }
+          .sidebar-overlay.active {
+            display: block;
+          }
+          .main-header {
+            padding: 0 1rem;
+          }
+          .user-name {
+            display: none;
+          }
+          .content-wrapper {
+            padding: 1rem;
           }
         }
       `}</style>

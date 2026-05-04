@@ -1,12 +1,29 @@
+'use client';
+
 import { 
   Clock, 
   AlertCircle, 
   TrendingUp, 
-  Film 
+  Film,
+  Play,
+  Square
 } from 'lucide-react';
 import styles from './page.module.css';
+import { useAttendance } from '@/hooks/useAttendance';
+import { format } from 'date-fns';
+import { cs } from 'date-fns/locale';
 
 export default function Home() {
+  const { activeSession, startSession, endSession, loading } = useAttendance();
+
+  const handleStartPauza = () => {
+    // In this simple system, Pause is just another attendance type
+    startSession('Volno M', 'Pauza z dashboardu');
+  };
+
+  const handleEndSession = () => {
+    endSession();
+  };
   return (
     <div className={styles.dashboard}>
       <div className={styles.statsGrid}>
@@ -79,20 +96,40 @@ export default function Home() {
           Rychlá Docházka
         </h2>
         
-        <div className={`${styles.statusIndicator} ${styles.statusActive}`}>
-          <div className={styles.statusDot}></div>
-          <span>Aktuálně: <strong>V práci</strong> (od 08:30)</span>
-        </div>
+        {loading ? (
+          <p>Načítání stavu...</p>
+        ) : activeSession ? (
+          <>
+            <div className={`${styles.statusIndicator} ${styles.statusActive}`}>
+              <div className={styles.statusDot}></div>
+              <span>Aktuálně: <strong>{activeSession.type}</strong> (od {format(new Date(activeSession.check_in), 'HH:mm')})</span>
+            </div>
 
-        <div className={styles.buttonGrid}>
-          <button className={`${styles.btn} ${styles.btnPrimary}`}>
-            <Clock size={18} />
-            Odchod
-          </button>
-          <button className={`${styles.btn} ${styles.btnSecondary}`}>
-            Pauza
-          </button>
-        </div>
+            <div className={styles.buttonGrid}>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleEndSession}>
+                <Square size={18} fill="currentColor" />
+                Ukončit
+              </button>
+              <button className={`${styles.btn} ${styles.btnSecondary}`} onClick={handleStartPauza}>
+                Pauza
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className={`${styles.statusIndicator}`}>
+              <div className={styles.statusDot} style={{ background: '#64748b' }}></div>
+              <span>Aktuálně: <strong>Nejste v práci</strong></span>
+            </div>
+
+            <div className={styles.buttonGrid}>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => startSession('Sklad')}>
+                <Play size={18} fill="currentColor" />
+                Zahájit práci
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className={`${styles.card} ${styles.tasksCard}`}>

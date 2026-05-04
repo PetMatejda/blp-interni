@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { 
   Home, 
   Clock, 
@@ -8,10 +9,16 @@ import {
   BarChart3, 
   Settings,
   LogOut,
-  Receipt
+  Receipt,
+  X
 } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { useAuth } from './AuthProvider';
+
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
 
 const navItems = [
   { icon: Home, label: 'Dashboard', href: '/' },
@@ -21,8 +28,9 @@ const navItems = [
   { icon: BarChart3, label: 'Reporty', href: '/reports' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { signOut, user } = useAuth();
+  const pathname = usePathname();
   const isAdmin = user?.email?.toLowerCase() === 'petmatejda@gmail.com';
 
   const finalNavItems = [...navItems];
@@ -31,15 +39,25 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
       <div className={styles.logo}>
         <div className={styles.logoIcon}>BLP</div>
         <span className={styles.logoText}>Interní</span>
+        {onClose && (
+          <button className={styles.mobileClose} onClick={onClose}>
+            <X size={20} />
+          </button>
+        )}
       </div>
       
       <nav className={styles.nav}>
         {finalNavItems.map((item) => (
-          <Link key={item.href} href={item.href} className={styles.navLink}>
+          <Link 
+            key={item.href} 
+            href={item.href} 
+            className={`${styles.navLink} ${pathname === item.href ? styles.active : ''}`}
+            onClick={onClose}
+          >
             <item.icon size={20} />
             <span>{item.label}</span>
           </Link>
