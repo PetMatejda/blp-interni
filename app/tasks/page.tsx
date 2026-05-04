@@ -109,7 +109,6 @@ export default function TasksPage() {
         ...p,
         events: p.project_events || []
       })) || [];
-      
       const sorted = [...projectsWithEvents].sort((a, b) => {
         const aDate = a.events?.length ? Math.min(...a.events.map(e => new Date(e.start_date).getTime())) : Infinity;
         const bDate = b.events?.length ? Math.min(...b.events.map(e => new Date(e.start_date).getTime())) : Infinity;
@@ -118,7 +117,7 @@ export default function TasksPage() {
         return aDate - bDate;
       });
 
-      setProjects(sorted);
+      setProjects(sorted as Project[]);
     }
   }, []);
 
@@ -480,7 +479,7 @@ export default function TasksPage() {
                             const isoDate = format(date, 'yyyy-MM-dd');
                             
                             const context = text.substring(Math.max(0, match.index! - 20), Math.min(text.length, match.index! + 30)).toLowerCase();
-                            let type: any = 'Točba';
+                            let type: ProjectEvent['type'] = 'Točba';
                             if (context.includes('rig') || context.includes('stavba')) type = 'Rigging';
                             if (context.includes('derig') || context.includes('bour')) type = 'Derigging';
                             if (context.includes('trav') || context.includes('ces') || context.includes('tam')) type = 'Travel (Tam)';
