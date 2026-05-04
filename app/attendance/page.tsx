@@ -533,11 +533,11 @@ export default function AttendancePage() {
                 </thead>
                 <tbody>
                   {bulkData.map((row, idx) => (
-                    <tr key={idx}>
+                    <tr key={idx} className={row.type ? styles.rowFilled : ''}>
                       <td className={styles.bulkDateCol}>
                         {format(row.date, 'eeeeee d.M.', { locale: cs })}
                       </td>
-                      <td>
+                      <td data-label="Typ">
                         <select 
                           value={row.type || ''} 
                           onChange={(e) => updateBulkRow(idx, 'type', e.target.value)}
@@ -548,7 +548,7 @@ export default function AttendancePage() {
                           <option value="Pauza">Pauza</option>
                         </select>
                       </td>
-                      <td>
+                      <td data-label="Příchod">
                         <input 
                           type="time" 
                           value={row.check_in || ''} 
@@ -556,7 +556,7 @@ export default function AttendancePage() {
                           className={styles.bulkInput}
                         />
                       </td>
-                      <td>
+                      <td data-label="Odchod">
                         <input 
                           type="time" 
                           value={row.check_out || ''} 
@@ -564,7 +564,7 @@ export default function AttendancePage() {
                           className={styles.bulkInput}
                         />
                       </td>
-                      <td>
+                      <td data-label="Poznámka">
                         <input 
                           type="text" 
                           value={row.comment || ''} 
