@@ -37,12 +37,12 @@
     --primary: #818cf8;
     --primary-hover: #6366f1;
     --secondary: #94a3b8;
-    --background: #030712;
+    --background: #000000;
     --foreground: #f8fafc;
-    --card: #111827;
+    --card: #1e293b;
     --card-foreground: #f8fafc;
     --border: #334155;
-    --input: #1f2937;
+    --input: #1e293b;
     --ring: rgba(129, 140, 248, 0.2);
   }
 }
@@ -73,6 +73,20 @@ h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
   font-weight: 600;
   line-height: 1.2;
+}
+
+.logoImage {
+  height: 32px;
+  max-width: 150px;
+  width: auto;
+  object-fit: contain;
+  transition: filter 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .logoImage {
+    filter: brightness(0) invert(1);
+  }
 }
 
 a {

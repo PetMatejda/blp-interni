@@ -42,7 +42,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
       <div className={styles.logo}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="BLP Logo" className={styles.logoImage} style={{ height: '32px', maxWidth: '150px', width: 'auto', objectFit: 'contain', background: '#fff', padding: '4px', borderRadius: '4px' }} />
+        <img src="/logo.png" alt="BLP Logo" className={styles.logoImage} />
         <span className={styles.logoText}>Interní</span>
         {onClose && (
           <button className={styles.mobileClose} onClick={onClose}>
