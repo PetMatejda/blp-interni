@@ -75,20 +75,6 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.2;
 }
 
-.logoImage {
-  height: 32px;
-  max-width: 150px;
-  width: auto;
-  object-fit: contain;
-  transition: filter 0.3s ease;
-}
-
-@media (prefers-color-scheme: dark) {
-  .logoImage {
-    filter: brightness(0) invert(1);
-  }
-}
-
 a {
   text-decoration: none;
   color: inherit;
