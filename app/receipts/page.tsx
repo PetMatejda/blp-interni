@@ -80,7 +80,7 @@ export default function ReceiptsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user, adminView, supabase]);
+  }, [user, adminView]);
 
   useEffect(() => {
     fetchReceipts();
@@ -398,8 +398,8 @@ export default function ReceiptsPage() {
                   <tr key={r.id}>
                     <td>
                       <div className={styles.userName}>
-                        <div className={styles.miniAvatar}>{r.profiles?.full_name?.charAt(0) || '?'}</div>
-                        {r.profiles?.full_name || 'Neznámý'}
+                        <div className={styles.miniAvatar}>U</div>
+                        Uživatel
                       </div>
                     </td>
                     <td>{format(new Date(r.date), 'dd.MM.yyyy')}</td>
