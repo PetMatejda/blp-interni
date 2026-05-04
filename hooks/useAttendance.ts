@@ -22,13 +22,13 @@ export function useAttendance() {
 
   const checkOverlaps = (records: AttendanceRecord[]) => {
     return records.map(record => {
-      if (!record.check_out) return { ...record, hasOverlap: false };
+      if (!record.check_out || record.type === 'Volno M' || record.type === 'Pauza') return { ...record, hasOverlap: false };
       
       const start = new Date(record.check_in).getTime();
       const end = new Date(record.check_out).getTime();
       
       const hasOverlap = records.some(other => {
-        if (other.id === record.id || !other.check_out) return false;
+        if (other.id === record.id || !other.check_out || other.type === 'Volno M' || other.type === 'Pauza') return false;
         const otherStart = new Date(other.check_in).getTime();
         const otherEnd = new Date(other.check_out).getTime();
         

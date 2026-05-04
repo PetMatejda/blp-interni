@@ -51,6 +51,12 @@ export default function Home() {
     // Only count records from current month
     if (checkIn.getMonth() === now.getMonth() && checkIn.getFullYear() === now.getFullYear()) {
       const diffHours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+      
+      // Odečítáme pauzy od celkového času
+      if (record.type === 'Volno M' || record.type === 'Pauza') {
+        return acc - diffHours;
+      }
+      
       return acc + diffHours;
     }
     return acc;
@@ -203,11 +209,13 @@ export default function Home() {
             <div className={styles.buttonGrid}>
               <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleEndSession}>
                 <Square size={18} fill="currentColor" />
-                Ukončit
+                {activeSession.type === 'Volno M' || activeSession.type === 'Pauza' ? 'Ukončit pauzu' : 'Ukončit'}
               </button>
-              <button className={`${styles.btn} ${styles.btnSecondary}`} onClick={handleStartPauza}>
-                Pauza
-              </button>
+              {activeSession.type !== 'Volno M' && activeSession.type !== 'Pauza' && (
+                <button className={`${styles.btn} ${styles.btnSecondary}`} onClick={handleStartPauza}>
+                  Pauza
+                </button>
+              )}
             </div>
           </>
         ) : (
