@@ -215,6 +215,25 @@ export default function Home() {
         </div>
       </Link>
 
+      <Link href="/tasks" className={`${styles.card} ${styles.tasksCard}`}>
+        <h2 className={styles.cardTitle}>
+          <Film size={20} />
+          Moje Projekty
+        </h2>
+        
+        <div className={styles.taskList}>
+          {myTasks.length === 0 && <p style={{ fontSize: '0.9rem', color: '#64748b', padding: '1rem' }}>Nemáte přiřazené žádné projekty.</p>}
+          {myTasks.map(task => (
+            <div key={task.id} className={styles.taskItem}>
+              <div className={styles.taskInfo}>
+                <span className={styles.taskTitle}>{task.projects?.title}</span>
+                <span className={styles.taskMeta}>Datum: {task.date} • {task.note || 'Přiřazeno'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Link>
+
       <Link href="/tasks" className={`${styles.card} ${styles.upcomingCard}`}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.cardTitle}>Nadcházející Projekty</h2>
@@ -235,16 +254,6 @@ export default function Home() {
       </Link>
 
       <div className={styles.statsGrid}>
-        <Link href="/tasks" className={styles.card}>
-          <div className={styles.statCard}>
-            <span className={styles.statLabel}>Aktivní zakázky</span>
-            <span className={styles.statValue}>{activeProjectsCount}</span>
-            <div className={styles.statTrend}>
-              <span>Aktuálně v běhu</span>
-            </div>
-          </div>
-        </Link>
-
         <Link href="/receipts" className={styles.card}>
           <div className={styles.statCard}>
             <span className={styles.statLabel}>Moje účtenky</span>
@@ -256,25 +265,6 @@ export default function Home() {
           </div>
         </Link>
       </div>
-
-      <Link href="/tasks" className={`${styles.card} ${styles.tasksCard}`}>
-        <h2 className={styles.cardTitle}>
-          <Film size={20} />
-          Moje úkoly (Projekty)
-        </h2>
-        
-        <div className={styles.taskList}>
-          {myTasks.length === 0 && <p style={{ fontSize: '0.9rem', color: '#64748b', padding: '1rem' }}>Nemáte přiřazené žádné projekty.</p>}
-          {myTasks.map(task => (
-            <div key={task.id} className={styles.taskItem}>
-              <div className={styles.taskInfo}>
-                <span className={styles.taskTitle}>{task.projects?.title}</span>
-                <span className={styles.taskMeta}>Datum: {task.date} • {task.note || 'Přiřazeno'}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Link>
     </div>
   );
 }
