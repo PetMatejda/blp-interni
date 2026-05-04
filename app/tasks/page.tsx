@@ -24,11 +24,18 @@ interface Project {
   title: string;
   client: string;
   location: string;
-  material_list: string;
   status: string;
-  color_code: string;
-  shooting?: string;
-  preparation?: string;
+  color_code?: string;
+  events?: ProjectEvent[];
+}
+
+interface ProjectEvent {
+  id: string;
+  project_id: string;
+  type: 'Rigging' | 'Shooting' | 'Travel' | 'Derigging' | 'Preparation';
+  start_date: string;
+  end_date: string;
+  note?: string;
 }
 
 interface Profile {
@@ -88,11 +95,18 @@ export default function TasksPage() {
   const fetchProjects = useCallback(async () => {
     const { data, error } = await supabase
       .from('projects')
-      .select('*')
+      .select('*, project_events(*)')
       .order('created_at', { ascending: false });
     
     if (error) console.error('Error fetching projects:', error);
-    else setProjects(data || []);
+    else {
+      // Map events to projects
+      const projectsWithEvents = data?.map(p => ({
+        ...p,
+        events: p.project_events || []
+      })) || [];
+      setProjects(projectsWithEvents);
+    }
   }, []);
 
   const fetchProfiles = useCallback(async () => {
@@ -434,7 +448,65 @@ export default function TasksPage() {
                   </div>
                 </div>
                 <div className={styles.sidebarSection}>
-                  <label>Harmonogram</label>
+                  <label>Termíny / Akce</label>
+                  <div className={styles.eventList}>
+                    {selectedProject.events?.map((event, idx) => (
+                      <div key={idx} className={styles.eventItem}>
+                        <span className={styles.eventType}>{event.type}</span>
+                        <span className={styles.eventDate}>
+                          {format(new Date(event.start_date), 'd.M.')} 
+                          {event.start_date !== event.end_date && ` - ${format(new Date(event.end_date), 'd.M.')}`}
+                        </span>
+                        <button 
+                          onClick={async () => {
+                            if (event.id) {
+                              const { error } = await supabase.from('project_events').delete().eq('id', event.id);
+                              if (error) alert(error.message);
+                              else fetchProjects();
+                            }
+                          }}
+                          className={styles.miniDelete}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className={styles.addEventForm}>
+                    <select id="newEventType" className={styles.miniSelect}>
+                      <option value="Rigging">Rigging</option>
+                      <option value="Shooting">Točení</option>
+                      <option value="Travel">Travel</option>
+                      <option value="Preparation">Příprava</option>
+                      <option value="Derigging">Derigg</option>
+                    </select>
+                    <input type="date" id="newEventDate" className={styles.miniInput} />
+                    <button 
+                      className={styles.miniAdd}
+                      onClick={async () => {
+                        const type = (document.getElementById('newEventType') as HTMLSelectElement).value;
+                        const date = (document.getElementById('newEventDate') as HTMLInputElement).value;
+                        if (date && selectedProject.id !== 'new') {
+                          const { error } = await supabase
+                            .from('project_events')
+                            .insert([{
+                              project_id: selectedProject.id,
+                              type,
+                              start_date: date,
+                              end_date: date
+                            }]);
+                          if (error) alert(error.message);
+                          else fetchProjects();
+                        }
+                      }}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.sidebarSection}>
+                  <label>Staré záznamy (Text)</label>
                   <div className={styles.sidebarValue}>
                     <strong>Příprava:</strong>
                     <input 
