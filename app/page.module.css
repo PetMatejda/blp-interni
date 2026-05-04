@@ -9,7 +9,14 @@
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.5rem;
   grid-column: 1 / -1;
-  margin-bottom: 2rem;
+}
+
+.hoursCard {
+  grid-column: span 1;
+}
+
+.upcomingCard {
+  grid-column: 1 / -1;
 }
 
 .card {
@@ -259,4 +266,31 @@
 .dashSelect:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--ring);
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .attendanceCard {
+    order: 1;
+  }
+  
+  .hoursCard {
+    order: 2;
+  }
+  
+  .tasksCard {
+    order: 3;
+  }
+  
+  .upcomingCard {
+    order: 4;
+  }
+  
+  .statsGrid {
+    order: 5;
+  }
 }

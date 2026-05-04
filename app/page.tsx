@@ -62,6 +62,8 @@ export default function Home() {
     return acc;
   }, 0);
 
+  const lastRecordDate = history.length > 0 ? new Date(history[0].check_in) : null;
+
   useEffect(() => {
     const fetchData = async () => {
       // 1. Fetch project count
@@ -76,7 +78,8 @@ export default function Home() {
       const { data: projData } = await supabase
         .from('projects')
         .select('*')
-        .eq('status', 'confirmed')
+        .neq('status', 'completed')
+        .order('created_at', { ascending: false })
         .limit(2);
       
       setUpcomingProjects(projData || []);
@@ -134,63 +137,6 @@ export default function Home() {
 
   return (
     <div className={styles.dashboard}>
-      <div className={styles.statsGrid}>
-        <div className={styles.card}>
-          <div className={styles.statCard}>
-            <span className={styles.statLabel}>Odpracováno (Tento měsíc)</span>
-            <span className={styles.statValue}>{monthlyHours.toFixed(1)} h</span>
-            <div className={`${styles.statTrend} ${styles.trendUp}`}>
-              <TrendingUp size={12} />
-              <span>Z reálných dat</span>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.sectionHeader}>
-            <h2 className={styles.cardTitle}>Nadcházející Projekty</h2>
-            <button className={styles.viewAll}>Zobrazit vše</button>
-          </div>
-          <div className={styles.taskGrid}>
-            {upcomingProjects.length === 0 && <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Žádné aktivní projekty.</p>}
-            {upcomingProjects.map(project => (
-              <div key={project.id} className={styles.taskCard}>
-                <div className={styles.taskStatus}>{project.status}</div>
-                <h4>{project.title}</h4>
-                <p>{project.client} • {project.location}</p>
-                <div className={styles.taskMeta}>
-                  <span>Termín v detailu</span>
-                  <div className={styles.teamAvatars}>
-                    <div className={styles.miniAvatar}>?</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.statCard}>
-            <span className={styles.statLabel}>Aktivní zakázky</span>
-            <span className={styles.statValue}>{activeProjectsCount}</span>
-            <div className={styles.statTrend}>
-              <span>Aktuálně v běhu</span>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.card}>
-          <div className={styles.statCard}>
-            <span className={styles.statLabel}>Moje účtenky</span>
-            <span className={styles.statValue}>{receiptStats.count}</span>
-            <div className={`${styles.statTrend} ${receiptStats.count > 0 ? styles.trendDown : styles.trendUp}`}>
-              <AlertCircle size={12} />
-              <span>Celkem {receiptStats.total.toLocaleString()} Kč</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div className={`${styles.card} ${styles.attendanceCard}`}>
         <h2 className={styles.cardTitle}>
           <Clock size={20} />
@@ -253,6 +199,59 @@ export default function Home() {
             </div>
           </>
         )}
+      </div>
+
+      <div className={`${styles.card} ${styles.hoursCard}`}>
+        <div className={styles.statCard}>
+          <span className={styles.statLabel}>Odpracováno (Tento měsíc)</span>
+          <span className={styles.statValue}>{monthlyHours.toFixed(1)} h</span>
+          <div className={`${styles.statTrend} ${styles.trendUp}`}>
+            <TrendingUp size={12} />
+            <span>Naposledy: {lastRecordDate ? format(lastRecordDate, 'd.M. HH:mm') : '--'}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className={`${styles.card} ${styles.upcomingCard}`}>
+        <div className={styles.sectionHeader}>
+          <h2 className={styles.cardTitle}>Nadcházející Projekty</h2>
+        </div>
+        <div className={styles.taskGrid}>
+          {upcomingProjects.length === 0 && <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Žádné aktivní projekty.</p>}
+          {upcomingProjects.map(project => (
+            <div key={project.id} className={styles.taskCard}>
+              <div className={styles.taskStatus}>{project.status}</div>
+              <h4>{project.title}</h4>
+              <p>{project.client} • {project.location}</p>
+              <div className={styles.taskMeta}>
+                <span>{project.shooting || 'Termín v detailu'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={styles.statsGrid}>
+        <div className={styles.card}>
+          <div className={styles.statCard}>
+            <span className={styles.statLabel}>Aktivní zakázky</span>
+            <span className={styles.statValue}>{activeProjectsCount}</span>
+            <div className={styles.statTrend}>
+              <span>Aktuálně v běhu</span>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.statCard}>
+            <span className={styles.statLabel}>Moje účtenky</span>
+            <span className={styles.statValue}>{receiptStats.count}</span>
+            <div className={`${styles.statTrend} ${receiptStats.count > 0 ? styles.trendDown : styles.trendUp}`}>
+              <AlertCircle size={12} />
+              <span>Celkem {receiptStats.total.toLocaleString()} Kč</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className={`${styles.card} ${styles.tasksCard}`}>
