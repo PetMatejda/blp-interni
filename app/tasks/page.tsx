@@ -498,13 +498,27 @@ export default function TasksPage() {
                               type,
                               start_date: isoDate,
                               end_date: isoDate
-                            });
                           }
-                          fetchProjects();
+                          await fetchProjects();
+                          
+                          // Update the currently selected project with new events
+                          const { data: updatedProj } = await supabase
+                            .from('projects')
+                            .select('*, project_events(*)')
+                            .eq('id', selectedProject.id)
+                            .single();
+                          
+                          if (updatedProj) {
+                            setSelectedProject({
+                              ...updatedProj,
+                              events: updatedProj.project_events || []
+                            } as Project);
+                          }
+
                           alert('Termíny byly úspěšně extrahovány.');
                         }}
                       >
-                        🪄 Kouzelná hůlka
+                        🪄
                       </button>
                     )}
                   </div>
