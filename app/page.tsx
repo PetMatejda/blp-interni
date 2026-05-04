@@ -103,18 +103,27 @@ export default function Home() {
   }, [currentUser]);
 
   const handleStartPauza = async () => {
-    await startSession('Volno M', 'Pauza z dashboardu');
+    const result = await startSession('Volno M', 'Pauza z dashboardu');
+    if (result && result.error) {
+      console.error(result.error);
+      alert('Chyba při zahajování pauzy: ' + JSON.stringify(result.error));
+    }
   };
 
   const handleEndSession = async () => {
     const result = await endSession();
-    if (result.error) {
-      alert('Chyba při ukončování: ' + (result.error instanceof Error ? result.error.message : String(result.error)));
+    if (result && result.error) {
+      console.error(result.error);
+      alert('Chyba při ukončování: ' + JSON.stringify(result.error));
     }
   };
 
   const handleStartWork = async () => {
-    await startSession(dashType);
+    const result = await startSession(dashType);
+    if (result && result.error) {
+      console.error(result.error);
+      alert('Chyba při zahajování: ' + JSON.stringify(result.error));
+    }
   };
 
   return (
