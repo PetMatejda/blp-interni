@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import { useAttendance, AttendanceRecord } from '@/hooks/useAttendance';
-import { format, differenceInSeconds, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
+import { format, differenceInSeconds, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isWeekend } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
@@ -29,6 +29,26 @@ interface BulkDayData {
   check_out: string;
   comment: string;
 }
+
+const CZECH_HOLIDAYS = [
+  { m: 0, d: 1 },   // Nový rok
+  { m: 4, d: 1 },   // Svátek práce
+  { m: 4, d: 8 },   // Den vítězství
+  { m: 6, d: 5 },   // Cyril a Metoděj
+  { m: 6, d: 6 },   // Jan Hus
+  { m: 8, d: 28 },  // Den české státnosti
+  { m: 9, d: 28 },  // Vznik samostatného státu
+  { m: 10, d: 17 }, // Den boje za svobodu
+  { m: 11, d: 24 }, // Štědrý den
+  { m: 11, d: 25 }, // 1. svátek vánoční
+  { m: 11, d: 26 }, // 2. svátek vánoční
+];
+
+const isHoliday = (date: Date) => {
+  const m = date.getMonth();
+  const d = date.getDate();
+  return CZECH_HOLIDAYS.some(h => h.m === m && h.d === d);
+};
 
 export default function AttendancePage() {
   const { 
@@ -118,8 +138,8 @@ export default function AttendancePage() {
 
   const applyQuickFill = () => {
     const newData = bulkData.map(row => {
-      // Fill only rows that are completely empty
-      if (!row.type && !row.check_in && !row.check_out) {
+      // Skip if already filled, or if it's a weekend or holiday
+      if (!row.type && !row.check_in && !row.check_out && !isWeekend(row.date) && !isHoliday(row.date)) {
         return {
           ...row,
           type: quickType,

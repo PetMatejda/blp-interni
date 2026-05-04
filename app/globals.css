@@ -37,12 +37,12 @@
     --primary: #818cf8;
     --primary-hover: #6366f1;
     --secondary: #94a3b8;
-    --background: #020617;
+    --background: #030712;
     --foreground: #f8fafc;
-    --card: #0f172a;
+    --card: #111827;
     --card-foreground: #f8fafc;
-    --border: #1e293b;
-    --input: #1e293b;
+    --border: #334155;
+    --input: #1f2937;
     --ring: rgba(129, 140, 248, 0.2);
   }
 }
