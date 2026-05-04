@@ -348,9 +348,11 @@ export default function TasksPage() {
               <button onClick={() => changeMonth(1)}><ChevronRight size={20} /></button>
             </div>
             <div className={styles.legend}>
-              <div className={styles.legendItem}><span className={styles.dot} style={{background: '#dcfce7'}}></span> Točba</div>
-              <div className={styles.legendItem}><span className={styles.dot} style={{background: '#fef3c7'}}></span> Sklad</div>
-              <div className={styles.legendItem}><span className={styles.dot} style={{background: '#f3e8ff'}}></span> Příprava</div>
+              <div className={styles.legendItem} title="Shooting / Točba"><span className={styles.dot} style={{background: '#dcfce7'}}></span> Točba</div>
+              <div className={styles.legendItem} title="Rigging / Stavba"><span className={styles.dot} style={{background: '#fef3c7'}}></span> Rigging</div>
+              <div className={styles.legendItem} title="Preparation / Příprava"><span className={styles.dot} style={{background: '#f3e8ff'}}></span> Příprava</div>
+              <div className={styles.legendItem} title="Travel / Cesta"><span className={styles.dot} style={{background: '#e0f2fe'}}></span> Travel</div>
+              <div className={styles.legendItem} title="Derigging / Bourání"><span className={styles.dot} style={{background: '#fee2e2'}}></span> Derigging</div>
             </div>
           </div>
 
@@ -471,6 +473,11 @@ export default function TasksPage() {
                           const dateRegex = /(\d{1,2})\.\s?(\d{1,2})\.(?:\s?(\d{4}))?/g;
                           const matches = [...text.matchAll(dateRegex)];
                           
+                          if (matches.length === 0) {
+                            alert('V textu nebyly nalezeny žádné termíny ve formátu D.M.');
+                            return;
+                          }
+
                           for (const match of matches) {
                             const day = parseInt(match[1]);
                             const month = parseInt(match[2]) - 1;
@@ -494,10 +501,10 @@ export default function TasksPage() {
                             });
                           }
                           fetchProjects();
-                          alert('Termíny byly extrahovány.');
+                          alert('Termíny byly úspěšně extrahovány.');
                         }}
                       >
-                        🪄
+                        🪄 Kouzelná hůlka
                       </button>
                     )}
                   </div>

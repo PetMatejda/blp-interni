@@ -34,7 +34,6 @@ interface Receipt {
   status: 'pending' | 'approved' | 'rejected' | 'paid';
   image_url: string;
   category: string;
-  profiles?: { full_name: string | null };
 }
 
 export default function ReceiptsPage() {
@@ -66,7 +65,7 @@ export default function ReceiptsPage() {
     try {
       let query = supabase
         .from('receipts')
-        .select('id, user_id, amount, currency, date, description, payment_type, status, category, profiles(full_name)')
+        .select('id, user_id, amount, currency, date, description, payment_type, status, category')
         .order('date', { ascending: false });
       
       if (!adminView) {
