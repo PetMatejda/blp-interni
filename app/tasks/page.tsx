@@ -56,7 +56,14 @@ export default function TasksPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [editingAssignment, setEditingAssignment] = useState<{name: string, date: string} | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<{
+    workerId: string, 
+    name: string, 
+    date: string, 
+    isoDate: string,
+    projectId?: string,
+    note?: string
+  } | null>(null);
   const [materialList, setMaterialList] = useState<string[]>([]);
   const [newMaterial, setNewMaterial] = useState('');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -344,7 +351,12 @@ export default function TasksPage() {
                         <td 
                           key={day} 
                           className={styles.clickableCell}
-                          onClick={() => setEditingAssignment({ name: worker.full_name, date: displayDate })}
+                          onClick={() => setEditingAssignment({ 
+                            workerId: worker.id,
+                            name: worker.full_name, 
+                            date: displayDate,
+                            isoDate: dateStr
+                          })}
                         >
                           {dayAssignments.length > 0 ? (
                             <div className={styles.assignmentsStack}>
@@ -515,18 +527,24 @@ export default function TasksPage() {
                           onChange={(e) => {
                             if (e.target.value) {
                               const selectedUser = profiles.find(p => p.id === e.target.value);
-                              if (selectedUser && confirm(`Přidat uživatele ${selectedUser.full_name} k projektu?`)) {
-                                (async () => {
-                                  const { error } = await supabase
-                                    .from('assignments')
-                                    .insert([{ 
-                                      project_id: selectedProject.id, 
-                                      user_id: selectedUser.id,
-                                      date: new Date().toISOString().split('T')[0]
-                                    }]);
-                                  if (error) alert(error.message);
-                                  else fetchAssignments(selectedProject.id);
-                                })();
+                              if (selectedUser) {
+                                const targetDate = selectedProject.shooting ? selectedProject.shooting.split(' ')[0] : new Date().toISOString().split('T')[0];
+                                if (confirm(`Přidat uživatele ${selectedUser.full_name} k projektu na den ${targetDate}?`)) {
+                                  (async () => {
+                                    const { error } = await supabase
+                                      .from('assignments')
+                                      .insert([{ 
+                                        project_id: selectedProject.id, 
+                                        user_id: selectedUser.id,
+                                        date: targetDate
+                                      }]);
+                                    if (error) alert(error.message);
+                                    else {
+                                      fetchAssignments(selectedProject.id);
+                                      fetchAllAssignments();
+                                    }
+                                  })();
+                                }
                               }
                             }
                           }}
@@ -570,23 +588,56 @@ export default function TasksPage() {
               <p><strong>Datum:</strong> {editingAssignment.date}</p>
               <div className={styles.formGroup}>
                 <label>Vyberte projekt / aktivitu</label>
-                <select className={styles.selectField}>
+                <select 
+                  className={styles.selectField}
+                  value={editingAssignment.projectId || ''}
+                  onChange={e => setEditingAssignment({...editingAssignment, projectId: e.target.value})}
+                >
                   <option value="">-- Žádná práce --</option>
-                  <option value="tom ford">Tom Ford Movie</option>
-                  <option value="schnapps">Stillking - Schnapps</option>
-                  <option value="galaxy">GALAXY TWILIGHT</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
                   <option value="sklad">Práce ve skladu</option>
                   <option value="volno">Volno</option>
                 </select>
               </div>
               <div className={styles.formGroup}>
                 <label>Poznámka</label>
-                <textarea className={styles.textareaField} placeholder="Např. rigging, cesta letadlem..."></textarea>
+                <textarea 
+                  className={styles.textareaField} 
+                  placeholder="Např. rigging, cesta letadlem..."
+                  value={editingAssignment.note || ''}
+                  onChange={e => setEditingAssignment({...editingAssignment, note: e.target.value})}
+                ></textarea>
               </div>
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.cancelBtn} onClick={() => setEditingAssignment(null)}>Zavřít</button>
-              <button className={styles.saveBtn} onClick={() => setEditingAssignment(null)}>
+              <button 
+                className={styles.saveBtn} 
+                onClick={async () => {
+                  if (!editingAssignment.projectId) {
+                    // Delete existing if any? Or just close
+                    setEditingAssignment(null);
+                    return;
+                  }
+                  
+                  const { error } = await supabase
+                    .from('assignments')
+                    .insert([{
+                      project_id: editingAssignment.projectId === 'sklad' || editingAssignment.projectId === 'volno' ? null : editingAssignment.projectId,
+                      user_id: editingAssignment.workerId,
+                      date: editingAssignment.isoDate,
+                      note: editingAssignment.projectId === 'sklad' ? 'Práce ve skladu' : (editingAssignment.projectId === 'volno' ? 'Volno' : editingAssignment.note)
+                    }]);
+                  
+                  if (error) alert(error.message);
+                  else {
+                    await fetchAllAssignments();
+                    setEditingAssignment(null);
+                  }
+                }}
+              >
                 <CheckCircle2 size={18} /> Potvrdit
               </button>
             </div>
