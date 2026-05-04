@@ -19,8 +19,8 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import { useAuth } from '@/components/AuthProvider';
-import { createBrowserClient } from '@supabase/ssr';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabase';
 
 interface Receipt {
   id: string;
@@ -56,18 +56,16 @@ export default function ReceiptsPage() {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   const fetchReceipts = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
     
     try {
-      let query = supabase.from('receipts').select('*, profiles(full_name)').order('date', { ascending: false });
+      let query = supabase
+        .from('receipts')
+        .select('id, user_id, amount, currency, date, description, payment_type, status, category, profiles(full_name)')
+        .order('date', { ascending: false });
       
       if (!adminView) {
         query = query.eq('user_id', user.id);
