@@ -105,7 +105,7 @@ export default function Home() {
           .from('assignments')
           .select('*, projects(*)')
           .eq('user_id', currentUser.id)
-          .limit(3);
+          .order('date', { ascending: true });
         
         setMyTasks(taskData || []);
       }

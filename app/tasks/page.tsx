@@ -339,20 +339,25 @@ export default function TasksPage() {
                       const dayNum = day + 1;
                       const dateStr = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${dayNum.toString().padStart(2, '0')}`;
                       const displayDate = `${dayNum}.${currentDate.getMonth() + 1}.`;
-                      const assignment = allAssignments.find(a => a.user_id === worker.id && a.date === dateStr);
+                      const dayAssignments = allAssignments.filter(a => a.user_id === worker.id && a.date === dateStr);
                       return (
                         <td 
                           key={day} 
                           className={styles.clickableCell}
                           onClick={() => setEditingAssignment({ name: worker.full_name, date: displayDate })}
                         >
-                          {assignment ? (
-                            <div 
-                              className={`${styles.assignment} ${styles.defaultAssignment}`}
-                              style={assignment.projects?.color_code ? { backgroundColor: assignment.projects.color_code, color: '#000', border: 'none' } : {}}
-                              title={assignment.projects?.title}
-                            >
-                              {assignment.note || assignment.projects?.title || 'Práce'}
+                          {dayAssignments.length > 0 ? (
+                            <div className={styles.assignmentsStack}>
+                              {dayAssignments.map((assignment, idx) => (
+                                <div 
+                                  key={idx}
+                                  className={`${styles.assignment} ${styles.defaultAssignment}`}
+                                  style={assignment.projects?.color_code ? { backgroundColor: assignment.projects.color_code, color: '#000', border: 'none' } : {}}
+                                  title={assignment.projects?.title}
+                                >
+                                  {assignment.note || assignment.projects?.title || 'Práce'}
+                                </div>
+                              ))}
                             </div>
                           ) : null}
                         </td>

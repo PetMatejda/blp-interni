@@ -697,3 +697,11 @@
   font-size: 0.9rem;
   color: var(--foreground);
 }
+
+.assignmentsStack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px;
+}
+
