@@ -67,7 +67,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                 {user.email?.substring(0, 2).toUpperCase()}
               </div>
               <div className="user-info">
-                <span className="user-name">{profile?.full_name || user.user_metadata.full_name || user.email}</span>
+                <span className="user-name">{profile?.full_name || user.user_metadata?.full_name || user.email}</span>
                 <span className="user-role">
                   {profile?.role === 'admin' ? 'Administrátor' : 'Zaměstnanec'}
                 </span>
