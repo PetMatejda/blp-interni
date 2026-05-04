@@ -69,9 +69,10 @@ export default function AttendancePage() {
   const [bulkData, setBulkData] = useState<BulkDayData[]>([]);
   const [timer, setTimer] = useState('00:00:00');
 
-  const [quickType, setQuickType] = useState('Sklad');
+  const [quickType, setQuickType] = useState('Točba');
   const [quickCheckIn, setQuickCheckIn] = useState('08:00');
   const [quickCheckOut, setQuickCheckOut] = useState('16:00');
+  const [isQuickFillOpen, setIsQuickFillOpen] = useState(false);
 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   
@@ -462,62 +463,74 @@ export default function AttendancePage() {
         <div className={styles.modalOverlay}>
           <div className={`${styles.modal} ${styles.bulkModal}`}>
             <div className={styles.modalHeader}>
-              <h3>Hromadné zadání - {format(bulkDate, 'LLLL yyyy', { locale: cs })}</h3>
-              <div className={styles.bulkNav}>
-                <button onClick={() => {
+              <div className={styles.bulkTitleInfo}>
+                <button className={styles.navMonthBtn} onClick={() => {
                   const d = new Date(bulkDate);
                   d.setMonth(d.getMonth() - 1);
                   setBulkDate(d);
-                }}><ChevronLeft size={20} /></button>
-                <button onClick={() => {
+                }}><ChevronLeft size={24} /></button>
+                <h3>{format(bulkDate, 'LLLL yyyy', { locale: cs }).toUpperCase()}</h3>
+                <button className={styles.navMonthBtn} onClick={() => {
                   const d = new Date(bulkDate);
                   if (d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear()) return;
                   d.setMonth(d.getMonth() + 1);
                   setBulkDate(d);
-                }} disabled={bulkDate.getMonth() === new Date().getMonth() && bulkDate.getFullYear() === new Date().getFullYear()}><ChevronRight size={20} /></button>
-                <button className={styles.closeBtn} onClick={() => setIsBulkModalOpen(false)}>
-                  <X size={20} />
-                </button>
+                }} disabled={bulkDate.getMonth() === new Date().getMonth() && bulkDate.getFullYear() === new Date().getFullYear()}><ChevronRight size={24} /></button>
               </div>
+              <button className={styles.closeBtn} onClick={() => setIsBulkModalOpen(false)}>
+                <X size={24} />
+              </button>
             </div>
 
-            <div className={styles.quickFillBar}>
-              <div className={styles.quickFillInputs}>
-                <div className={styles.quickFillGroup}>
-                  <label>Typ</label>
-                  <select 
-                    value={quickType} 
-                    onChange={(e) => setQuickType(e.target.value)}
-                    className={styles.dashSelect}
-                  >
-                    {['Travel', 'Točba', 'Rigg', 'Sklad', 'Volno M', 'Dovolená', 'Nemoc'].map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className={styles.quickFillGroup}>
-                  <label>Od</label>
-                  <input 
-                    type="time" 
-                    className={styles.input}
-                    value={quickCheckIn} 
-                    onChange={(e) => setQuickCheckIn(e.target.value)} 
-                  />
-                </div>
-                <div className={styles.quickFillGroup}>
-                  <label>Do</label>
-                  <input 
-                    type="time" 
-                    className={styles.input}
-                    value={quickCheckOut} 
-                    onChange={(e) => setQuickCheckOut(e.target.value)} 
-                  />
-                </div>
-              </div>
-              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={applyQuickFill}>
-                <Plus size={16} />
-                Vyplnit prázdné dny
+            <div className={styles.quickFillSection}>
+              <button 
+                className={styles.quickFillToggle} 
+                onClick={() => setIsQuickFillOpen(!isQuickFillOpen)}
+              >
+                <span>{isQuickFillOpen ? 'Skrýt hromadné vyplnění' : 'Rychlé vyplnění prázdných dnů (Smart Fill)'}</span>
+                {isQuickFillOpen ? <X size={16} /> : <Plus size={16} />}
               </button>
+              
+              {isQuickFillOpen && (
+                <div className={styles.quickFillBar}>
+                  <div className={styles.quickFillInputs}>
+                    <div className={styles.quickFillGroup}>
+                      <label>Typ</label>
+                      <select 
+                        value={quickType} 
+                        onChange={(e) => setQuickType(e.target.value)}
+                        className={styles.dashSelect}
+                      >
+                        {['Travel', 'Točba', 'Rigg', 'Sklad', 'Volno M', 'Dovolená', 'Nemoc'].map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className={styles.quickFillGroup}>
+                      <label>Od</label>
+                      <input 
+                        type="time" 
+                        className={styles.input}
+                        value={quickCheckIn} 
+                        onChange={(e) => setQuickCheckIn(e.target.value)} 
+                      />
+                    </div>
+                    <div className={styles.quickFillGroup}>
+                      <label>Do</label>
+                      <input 
+                        type="time" 
+                        className={styles.input}
+                        value={quickCheckOut} 
+                        onChange={(e) => setQuickCheckOut(e.target.value)} 
+                      />
+                    </div>
+                  </div>
+                  <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={applyQuickFill}>
+                    <Plus size={16} />
+                    Vyplnit vše prázdné
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className={styles.bulkTableWrapper}>
