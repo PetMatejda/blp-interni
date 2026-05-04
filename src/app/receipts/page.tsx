@@ -95,6 +95,7 @@ export default function ReceiptsPage() {
         amount: (Math.random() * 2000 + 100).toFixed(0),
         date: new Date().toISOString().split('T')[0],
         description: '',
+        category: 'BLP',
         paymentType: 'personal'
       });
       setIsProcessing(false);
