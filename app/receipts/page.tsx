@@ -107,9 +107,9 @@ export default function ReceiptsPage() {
     // Simulate OCR delay
     setTimeout(() => {
       setExtractedData({
-        amount: (Math.random() * 2000 + 100).toFixed(0),
+        amount: '',
         date: new Date().toISOString().split('T')[0],
-        description: 'Vytěženo automaticky',
+        description: '',
         category: 'BLP',
         paymentType: 'personal'
       });

@@ -126,12 +126,11 @@ export function useAttendance() {
         .from('attendance')
         .update({ check_out: new Date().toISOString() })
         .eq('id', activeSession.id)
-        .select()
-        .single();
+        .select();
 
-      if (error) {
-        console.error('Error ending session:', error);
-        return { error };
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Nepodařilo se aktualizovat záznam. Zkontrolujte oprávnění (RLS policies) v Supabase.');
       }
 
       setActiveSession(null);

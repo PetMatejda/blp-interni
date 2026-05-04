@@ -31,17 +31,49 @@ export default function AttendancePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [timer, setTimer] = useState('00:00:00');
 
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+  
   const handleDelete = async (id: string) => {
     if (confirm('Opravdu chcete smazat tento záznam?')) {
       await deleteRecord(id);
     }
   };
 
-  const handleEdit = async (id: string, currentComment: string | null) => {
-    const newComment = prompt('Upravit komentář:', currentComment || '');
-    if (newComment !== null) {
-      await updateRecord(id, { comment: newComment });
+  const [formData, setFormData] = useState({
+    date: format(new Date(), 'yyyy-MM-dd'),
+    type: 'Točba',
+    check_in: '08:00',
+    check_out: '16:00',
+    comment: ''
+  });
+
+  const handleEdit = (record: any) => {
+    const checkInDate = new Date(record.check_in);
+    setFormData({
+      date: format(checkInDate, 'yyyy-MM-dd'),
+      type: record.type,
+      check_in: format(checkInDate, 'HH:mm'),
+      check_out: record.check_out ? format(new Date(record.check_out), 'HH:mm') : '',
+      comment: record.comment || ''
+    });
+    setEditingRecordId(record.id);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveModal = async () => {
+    const checkInISO = new Date(`${formData.date}T${formData.check_in}`).toISOString();
+    const checkOutISO = formData.check_out ? new Date(`${formData.date}T${formData.check_out}`).toISOString() : null;
+    
+    if (editingRecordId) {
+      await updateRecord(editingRecordId, {
+        type: formData.type,
+        check_in: checkInISO,
+        check_out: checkOutISO,
+        comment: formData.comment
+      });
     }
+    setIsModalOpen(false);
+    setEditingRecordId(null);
   };
 
   useEffect(() => {
@@ -196,7 +228,7 @@ export default function AttendancePage() {
                       <button 
                         className={styles.actionBtn} 
                         title="Upravit"
-                        onClick={() => handleEdit(record.id, record.comment)}
+                        onClick={() => handleEdit(record)}
                       >
                         <Edit2 size={16} />
                       </button>
@@ -216,20 +248,29 @@ export default function AttendancePage() {
         </div>
       </div>
 
-      {/* Manual Entry Modal Placeholder */}
+      {/* Manual Entry / Edit Modal */}
       {isModalOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>
-            <h3>Zpětné zadání docházky</h3>
+            <h3>{editingRecordId ? 'Upravit záznam' : 'Zpětné zadání docházky'}</h3>
             <div className={styles.form}>
               <div className={styles.formGroup}>
                 <label>Datum</label>
-                <input type="date" className={styles.input} />
+                <input 
+                  type="date" 
+                  className={styles.input} 
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                />
               </div>
               <div className={styles.formGroup}>
                 <label>Typ docházky</label>
-                <select className={styles.select}>
-                  {ATTENDANCE_TYPES.map(type => (
+                <select 
+                  className={styles.select}
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value})}
+                >
+                  {['Točba', 'Příprava', 'Sklad', 'Travel', 'Rigg', 'Volno M', 'Dovolená', 'Nemoc', 'Pauza'].map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </select>
@@ -237,20 +278,48 @@ export default function AttendancePage() {
               <div className={styles.formRow}>
                 <div className={styles.formGroup}>
                   <label>Příchod</label>
-                  <input type="time" className={styles.input} />
+                  <input 
+                    type="time" 
+                    className={styles.input}
+                    value={formData.check_in}
+                    onChange={(e) => setFormData({...formData, check_in: e.target.value})}
+                  />
                 </div>
                 <div className={styles.formGroup}>
                   <label>Odchod</label>
-                  <input type="time" className={styles.input} />
+                  <input 
+                    type="time" 
+                    className={styles.input}
+                    value={formData.check_out}
+                    onChange={(e) => setFormData({...formData, check_out: e.target.value})}
+                  />
                 </div>
               </div>
               <div className={styles.formGroup}>
                 <label>Komentář</label>
-                <textarea className={styles.input} rows={3} />
+                <textarea 
+                  className={styles.input} 
+                  rows={3}
+                  value={formData.comment}
+                  onChange={(e) => setFormData({...formData, comment: e.target.value})}
+                />
               </div>
               <div className={styles.modalActions}>
-                <button className={styles.secondaryBtn} onClick={() => setIsModalOpen(false)}>Zrušit</button>
-                <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setIsModalOpen(false)}>Uložit záznam</button>
+                <button 
+                  className={styles.secondaryBtn}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setEditingRecordId(null);
+                  }}
+                >
+                  Zrušit
+                </button>
+                <button 
+                  className={`${styles.btn} ${styles.btnPrimary}`}
+                  onClick={handleSaveModal}
+                >
+                  Uložit
+                </button>
               </div>
             </div>
           </div>

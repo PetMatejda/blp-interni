@@ -64,6 +64,8 @@ export default function TasksPage() {
   const [newMaterial, setNewMaterial] = useState('');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
 
+  const [allAssignments, setAllAssignments] = useState<any[]>([]);
+
   const fetchProjects = useCallback(async () => {
     const { data, error } = await supabase
       .from('projects')
@@ -83,14 +85,23 @@ export default function TasksPage() {
     else setProfiles(data || []);
   }, []);
 
+  const fetchAllAssignments = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('assignments')
+      .select('*, projects(title, color_code, status)');
+    
+    if (error) console.error('Error fetching all assignments:', error);
+    else setAllAssignments(data || []);
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await Promise.all([fetchProjects(), fetchProfiles()]);
+      await Promise.all([fetchProjects(), fetchProfiles(), fetchAllAssignments()]);
       setLoading(false);
     };
     init();
-  }, [fetchProjects, fetchProfiles]);
+  }, [fetchProjects, fetchProfiles, fetchAllAssignments]);
 
   const fetchAssignments = useCallback(async (projectId: string) => {
     const { data, error } = await supabase
@@ -117,6 +128,26 @@ export default function TasksPage() {
 
   const handleRemoveMaterial = (index: number) => {
     setMaterialList(materialList.filter((_, i) => i !== index));
+  };
+
+  const handleAddProject = async () => {
+    const title = prompt('Název nového projektu:');
+    if (!title) return;
+    const client = prompt('Klient (nepovinné):') || '';
+    
+    const { error } = await supabase.from('projects').insert([{
+      title,
+      client,
+      status: 'Pending',
+      color_code: '#cbd5e1'
+    }]);
+    
+    if (error) {
+      alert('Chyba při vytváření projektu.');
+      console.error(error);
+    } else {
+      fetchProjects();
+    }
   };
 
   return (
@@ -151,7 +182,7 @@ export default function TasksPage() {
               <Search size={18} />
               <input type="text" placeholder="Hledat projekt, lokalitu nebo klienta..." />
             </div>
-            <button className={styles.addBtn}>
+            <button className={styles.addBtn} onClick={handleAddProject}>
               <Plus size={18} />
               Nový Projekt
             </button>
@@ -228,31 +259,34 @@ export default function TasksPage() {
               <thead>
                 <tr>
                   <th className={styles.stickyCol}>Jméno</th>
-                  {[...Array(15)].map((_, i) => (
+                  {[...Array(31)].map((_, i) => (
                     <th key={i}>{i + 1}.5.</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {MOCK_SCHEDULE.map((worker, i) => (
-                  <tr key={i}>
-                    <td className={styles.stickyCol}>{worker.name}</td>
-                    {[...Array(15)].map((_, day) => {
-                      const dateStr = `${day + 1}.5.`;
-                      const assignment = worker.assignments[dateStr as keyof typeof worker.assignments];
+                {profiles.map((worker) => (
+                  <tr key={worker.id}>
+                    <td className={styles.stickyCol}>{worker.full_name}</td>
+                    {[...Array(31)].map((_, day) => {
+                      const dateStr = `2026-05-${(day + 1).toString().padStart(2, '0')}`;
+                      const displayDate = `${day + 1}.5.`;
+                      const assignment = allAssignments.find(a => a.user_id === worker.id && a.date === dateStr);
                       return (
                         <td 
                           key={day} 
                           className={styles.clickableCell}
-                          onClick={() => setEditingAssignment({ name: worker.name, date: dateStr })}
+                          onClick={() => setEditingAssignment({ name: worker.full_name, date: displayDate })}
                         >
                           {assignment ? (
-                            <div className={`${styles.assignment} ${styles[assignment.toLowerCase()] || styles.defaultAssignment}`}>
-                              {assignment.charAt(0)}
+                            <div 
+                              className={`${styles.assignment} ${styles.defaultAssignment}`}
+                              style={assignment.projects?.color_code ? { backgroundColor: assignment.projects.color_code, color: '#000', border: 'none' } : {}}
+                              title={assignment.projects?.title}
+                            >
+                              {assignment.note || assignment.projects?.title || 'Práce'}
                             </div>
-                          ) : (
-                            <div className={styles.emptyCell}>+</div>
-                          )}
+                          ) : null}
                         </td>
                       );
                     })}

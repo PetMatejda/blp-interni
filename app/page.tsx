@@ -146,9 +146,9 @@ export default function Home() {
           </div>
         </div>
 
-        <section className={styles.tasksSection}>
+        <div className={styles.card}>
           <div className={styles.sectionHeader}>
-            <h3>Nadcházející Projekty</h3>
+            <h2 className={styles.cardTitle}>Nadcházející Projekty</h2>
             <button className={styles.viewAll}>Zobrazit vše</button>
           </div>
           <div className={styles.taskGrid}>
@@ -167,7 +167,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </section>
+        </div>
 
         <div className={styles.card}>
           <div className={styles.statCard}>

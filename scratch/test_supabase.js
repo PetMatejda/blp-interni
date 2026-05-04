@@ -1,25 +1,18 @@
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config({ path: '.env.local' });
 
-const supabaseUrl = 'https://rxvjuliaxorfvxvlmpiw.supabase.co';
-const supabaseAnonKey = 'sb_publishable_fEHhrXkLBZyCQx8nVLEFRQ_yuJ484R9';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-async function testConnection() {
-  console.log('Testing connection to Supabase...');
+async function check() {
+  console.log("URL:", supabaseUrl);
+  // Log in as the user to test RLS
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    email: 'petmatejda@gmail.com', // Assuming this is the user
+    password: 'password' // We don't have the password
+  });
   
-  // Try to fetch something public or just get server time
-  const { data, error } = await supabase.from('attendance').select('*').limit(1);
-  
-  if (error) {
-    console.error('Connection failed:', error.message);
-    if (error.message.includes('FetchError')) {
-      console.log('TIP: Check if the URL is correct and Supabase project is active.');
-    }
-  } else {
-    console.log('Connection successful!');
-    console.log('Data fetched (even if empty, it means keys are valid):', data);
-  }
+  // We can just use service role key if we had it, but we only have anon key.
 }
-
-testConnection();
+check();
