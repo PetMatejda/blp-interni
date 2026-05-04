@@ -634,7 +634,7 @@
   color: var(--secondary);
 }
 
-.select, textarea {
+.selectField, .textareaField {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid var(--border);
@@ -643,7 +643,7 @@
   font-family: inherit;
 }
 
-textarea {
+.textareaField {
   height: 80px;
   resize: none;
 }

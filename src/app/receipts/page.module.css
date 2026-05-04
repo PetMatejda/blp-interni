@@ -490,6 +490,6 @@
 }
 
 .approveBtn:hover {
-  color: #10b981 !auto;
+  color: #10b981 !important;
   background: #dcfce7 !important;
 }

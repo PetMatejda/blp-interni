@@ -246,7 +246,7 @@ export default function TasksPage() {
               <div className={styles.modalSidebar}>
                 <div className={styles.sidebarSection}>
                   <label>Status</label>
-                  <select defaultValue={selectedProject.status.toLowerCase()}>
+                  <select className={styles.selectField} defaultValue={selectedProject.status.toLowerCase()}>
                     <option value="confirmed">Confirmed</option>
                     <option value="pending">Pending</option>
                   </select>
@@ -341,7 +341,7 @@ export default function TasksPage() {
               <p><strong>Datum:</strong> {editingAssignment.date}</p>
               <div className={styles.formGroup}>
                 <label>Vyberte projekt / aktivitu</label>
-                <select className={styles.select}>
+                <select className={styles.selectField}>
                   <option value="">-- Žádná práce --</option>
                   <option value="tom ford">Tom Ford Movie</option>
                   <option value="schnapps">Stillking - Schnapps</option>
@@ -352,7 +352,7 @@ export default function TasksPage() {
               </div>
               <div className={styles.formGroup}>
                 <label>Poznámka</label>
-                <textarea placeholder="Např. rigging, cesta letadlem..."></textarea>
+                <textarea className={styles.textareaField} placeholder="Např. rigging, cesta letadlem..."></textarea>
               </div>
             </div>
             <div className={styles.modalFooter}>
