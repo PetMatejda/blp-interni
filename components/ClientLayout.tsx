@@ -42,14 +42,23 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <main className="main-content">
         <header className="main-header">
           <div className="header-content">
-            <h1>Dashboard</h1>
+            <h1>{
+              pathname === '/' ? 'Dashboard' : 
+              pathname === '/attendance' ? 'Docházka' : 
+              pathname === '/tasks' ? 'Úkoly & Projekty' : 
+              pathname === '/receipts' ? 'Účtenky' : 
+              pathname === '/reports' ? 'Reporty' : 
+              pathname === '/admin/users' ? 'Správa uživatelů' : 'Systém'
+            }</h1>
             <div className="user-profile">
               <div className="avatar">
                 {user.email?.substring(0, 2).toUpperCase()}
               </div>
               <div className="user-info">
                 <span className="user-name">{user.user_metadata.full_name || user.email}</span>
-                <span className="user-role">Zaměstnanec</span>
+                <span className="user-role">
+                  {user.email?.toLowerCase() === 'petmatejda@gmail.com' ? 'Administrátor' : 'Zaměstnanec'}
+                </span>
               </div>
             </div>
           </div>
