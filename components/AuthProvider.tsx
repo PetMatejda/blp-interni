@@ -34,32 +34,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check active sessions and sets the user
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) await ensureProfile(session.user);
-      setLoading(false);
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) await ensureProfile(session.user);
+      } catch (err) {
+        console.error("Error getting session:", err);
+      } finally {
+        setLoading(false);
+      }
     };
 
     getSession();
 
     // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session) {
-        await ensureProfile(session.user);
-        setLoading(false);
-        if (pathname === '/login') {
-          router.push('/');
+      try {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session) {
+          await ensureProfile(session.user);
+          if (pathname === '/login') {
+            router.push('/');
+          }
+        } else {
+          setProfile(null);
+          if (pathname !== '/login' && !pathname.includes('/auth/callback')) {
+            router.push('/login');
+          }
         }
-      } else {
-        setProfile(null);
+      } catch (err) {
+        console.error("Error in onAuthStateChange:", err);
+      } finally {
         setLoading(false);
-        if (pathname !== '/login' && !pathname.includes('/auth/callback')) {
-          router.push('/login');
-        }
       }
     });
 
@@ -69,24 +80,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router, pathname]);
 
   const ensureProfile = async (user: User) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
 
-    if (!data && !error) {
-      // Create profile
-      const newProfile = { 
-        id: user.id, 
-        full_name: user.user_metadata.full_name || user.email,
-        email: user.email,
-        role: user.email === 'petmatejda@gmail.com' ? 'admin' : 'employee'
-      };
-      await supabase.from('profiles').insert([newProfile]);
-      setProfile(newProfile as Profile);
-    } else if (data) {
-      setProfile(data as Profile);
+      if (error) {
+        console.error("Error fetching profile:", error);
+      }
+
+      if (!data && !error) {
+        // Create profile
+        const newProfile = { 
+          id: user.id, 
+          full_name: user.user_metadata?.full_name || user.email,
+          email: user.email,
+          role: user.email === 'petmatejda@gmail.com' ? 'admin' : 'employee'
+        };
+        const { error: insertError } = await supabase.from('profiles').insert([newProfile]);
+        if (insertError) {
+          console.error("Error inserting profile:", insertError);
+        }
+        setProfile(newProfile as Profile);
+      } else if (data) {
+        setProfile(data as Profile);
+      }
+    } catch (err) {
+      console.error("Unexpected error in ensureProfile:", err);
     }
   };
 
