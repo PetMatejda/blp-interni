@@ -518,3 +518,60 @@
 .btnPrimary:hover {
   filter: brightness(1.1);
 }
+
+.quickFillBar {
+  background: var(--muted);
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
+}
+
+.quickFillInputs {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.quickFillGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 120px;
+}
+
+.quickFillGroup label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.quickFillGroup select,
+.quickFillGroup input {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .quickFillBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .quickFillInputs {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

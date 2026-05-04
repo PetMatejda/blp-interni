@@ -49,6 +49,10 @@ export default function AttendancePage() {
   const [bulkData, setBulkData] = useState<BulkDayData[]>([]);
   const [timer, setTimer] = useState('00:00:00');
 
+  const [quickType, setQuickType] = useState('Sklad');
+  const [quickCheckIn, setQuickCheckIn] = useState('08:00');
+  const [quickCheckOut, setQuickCheckOut] = useState('16:00');
+
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   
   const handleDelete = async (id: string) => {
@@ -109,6 +113,22 @@ export default function AttendancePage() {
   const updateBulkRow = (index: number, field: 'type' | 'check_in' | 'check_out' | 'comment', value: string) => {
     const newData = [...bulkData];
     newData[index] = { ...newData[index], [field]: value };
+    setBulkData(newData);
+  };
+
+  const applyQuickFill = () => {
+    const newData = bulkData.map(row => {
+      // Fill only rows that are completely empty
+      if (!row.type && !row.check_in && !row.check_out) {
+        return {
+          ...row,
+          type: quickType,
+          check_in: quickCheckIn,
+          check_out: quickCheckOut
+        };
+      }
+      return row;
+    });
     setBulkData(newData);
   };
 
@@ -439,6 +459,45 @@ export default function AttendancePage() {
                   <X size={20} />
                 </button>
               </div>
+            </div>
+
+            <div className={styles.quickFillBar}>
+              <div className={styles.quickFillInputs}>
+                <div className={styles.quickFillGroup}>
+                  <label>Typ</label>
+                  <select 
+                    value={quickType} 
+                    onChange={(e) => setQuickType(e.target.value)}
+                    className={styles.dashSelect}
+                  >
+                    {['Travel', 'Točba', 'Rigg', 'Sklad', 'Volno M', 'Dovolená', 'Nemoc'].map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={styles.quickFillGroup}>
+                  <label>Od</label>
+                  <input 
+                    type="time" 
+                    className={styles.input}
+                    value={quickCheckIn} 
+                    onChange={(e) => setQuickCheckIn(e.target.value)} 
+                  />
+                </div>
+                <div className={styles.quickFillGroup}>
+                  <label>Do</label>
+                  <input 
+                    type="time" 
+                    className={styles.input}
+                    value={quickCheckOut} 
+                    onChange={(e) => setQuickCheckOut(e.target.value)} 
+                  />
+                </div>
+              </div>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={applyQuickFill}>
+                <Plus size={16} />
+                Vyplnit prázdné dny
+              </button>
             </div>
 
             <div className={styles.bulkTableWrapper}>
