@@ -127,25 +127,65 @@ export default function TasksPage() {
     setMaterialList(materialList.filter((_, i) => i !== index));
   };
 
-  const handleAddProject = async () => {
-    const title = prompt('Název nového projektu:');
-    if (!title) return;
-    const client = prompt('Klient (nepovinné):') || '';
-    
-    const { error } = await supabase.from('projects').insert([{
-      title,
-      client,
-      status: 'Pending',
-      color_code: '#cbd5e1'
-    }]);
-    
-    if (error) {
-      alert('Chyba při vytváření projektu.');
-      console.error(error);
-    } else {
-      fetchProjects();
-    }
+  const handleAddProject = () => {
+    setSelectedProject({
+      id: 'new',
+      title: '',
+      client: '',
+      location: '',
+      material_list: '',
+      status: 'pending',
+      color_code: '#cbd5e1',
+      shooting: '',
+      preparation: ''
+    });
+    setMaterialList([]);
   };
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveProject = async () => {
+      if (!selectedProject) return;
+      setIsSaving(true);
+      
+      const projectData = {
+        title: selectedProject.title || 'Nový Projekt',
+        client: selectedProject.client || '',
+        location: selectedProject.location || '',
+        material_list: materialList.join(', '),
+        status: selectedProject.status || 'pending',
+        color_code: selectedProject.color_code || '#cbd5e1',
+        shooting: selectedProject.shooting || '',
+        preparation: selectedProject.preparation || ''
+      };
+
+      try {
+        if (selectedProject.id === 'new') {
+          const { error } = await supabase.from('projects').insert([projectData]);
+          if (error) {
+            console.error('Insert error:', error);
+            alert('Chyba při vytváření: ' + error.message);
+          } else {
+            await fetchProjects();
+            setSelectedProject(null);
+          }
+        } else {
+          const { error } = await supabase.from('projects').update(projectData).eq('id', selectedProject.id);
+          if (error) {
+            console.error('Update error:', error);
+            alert('Chyba při aktualizaci: ' + error.message);
+          } else {
+            await fetchProjects();
+            setSelectedProject(null);
+          }
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+        alert('Neočekávaná chyba při ukládání.');
+      } finally {
+        setIsSaving(false);
+      }
+    };
 
   return (
     <div className={styles.container}>
@@ -301,8 +341,18 @@ export default function TasksPage() {
           <div className={styles.modalContent}>
             <div className={styles.modalHeader}>
               <div className={styles.modalTitle}>
-                <span className={styles.clientLabel}>{selectedProject.client}</span>
-                <h2>{selectedProject.title}</h2>
+                <input 
+                  className={styles.clientLabelInput} 
+                  placeholder="KLIENT"
+                  value={selectedProject.client || ''} 
+                  onChange={e => setSelectedProject({...selectedProject, client: e.target.value})} 
+                />
+                <input 
+                  className={styles.titleInput} 
+                  placeholder="Název projektu"
+                  value={selectedProject.title || ''} 
+                  onChange={e => setSelectedProject({...selectedProject, title: e.target.value})} 
+                />
               </div>
               <button className={styles.closeBtn} onClick={() => setSelectedProject(null)}>
                 <X size={24} />
@@ -313,25 +363,57 @@ export default function TasksPage() {
               <div className={styles.modalSidebar}>
                 <div className={styles.sidebarSection}>
                   <label>Status</label>
-                  <select className={styles.selectField} defaultValue={selectedProject.status.toLowerCase()}>
+                  <select 
+                    className={styles.selectField} 
+                    value={selectedProject.status?.toLowerCase() || 'pending'}
+                    onChange={e => setSelectedProject({...selectedProject, status: e.target.value})}
+                  >
                     <option value="confirmed">Confirmed</option>
+                    <option value="not confirmed">Not Confirmed</option>
                     <option value="pending">Pending</option>
                   </select>
                 </div>
                 <div className={styles.sidebarSection}>
-                  <label>Lokalita</label>
+                  <label>Lokalita / Set</label>
                   <div className={styles.sidebarValue}>
-                    <MapPin size={16} /> {selectedProject.location}
+                    <MapPin size={16} /> 
+                    <input 
+                      className={styles.sidebarInput} 
+                      placeholder="Např. Studio 1"
+                      value={selectedProject.location || ''} 
+                      onChange={e => setSelectedProject({...selectedProject, location: e.target.value})} 
+                    />
                   </div>
                 </div>
                 <div className={styles.sidebarSection}>
                   <label>Harmonogram</label>
                   <div className={styles.sidebarValue}>
-                    <strong>Příprava:</strong><br /> {selectedProject.preparation}
+                    <strong>Příprava:</strong>
+                    <input 
+                      className={styles.sidebarInput} 
+                      placeholder="Např. 28.4. rigg"
+                      value={selectedProject.preparation || ''} 
+                      onChange={e => setSelectedProject({...selectedProject, preparation: e.target.value})} 
+                    />
                   </div>
                   <div className={styles.sidebarValue}>
-                    <strong>Točení:</strong><br /> {selectedProject.shooting}
+                    <strong>Točení:</strong>
+                    <input 
+                      className={styles.sidebarInput} 
+                      placeholder="Např. 29.4. točba"
+                      value={selectedProject.shooting || ''} 
+                      onChange={e => setSelectedProject({...selectedProject, shooting: e.target.value})} 
+                    />
                   </div>
+                </div>
+                <div className={styles.sidebarSection}>
+                  <label>Barva</label>
+                  <input 
+                    type="color" 
+                    value={selectedProject.color_code || '#cbd5e1'} 
+                    onChange={e => setSelectedProject({...selectedProject, color_code: e.target.value})} 
+                    style={{width: '100%', height: '40px', padding: '0', border: 'none', borderRadius: '4px'}}
+                  />
                 </div>
               </div>
 
@@ -362,58 +444,77 @@ export default function TasksPage() {
 
                 <div className={styles.section}>
                   <h3><Users size={20} /> Přiřazený tým</h3>
-                  <div className={styles.teamGrid}>
-                    {assignments.map((assignment) => (
-                      <div key={assignment.id} className={styles.teamMember}>
-                        <div className={styles.avatar}>
-                          {assignment.profiles?.full_name?.substring(0, 2).toUpperCase() || '??'}
-                        </div>
-                        <div className={styles.memberInfo}>
-                          <strong>{assignment.profiles?.full_name || 'Neznámý'}</strong>
-                          <span>{assignment.note || 'Člen týmu'}</span>
-                        </div>
-                        <button className={styles.removeMember}><Trash2 size={16} /></button>
-                      </div>
-                    ))}
-                    
-                    <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Přidat člena:</label>
-                      <select 
-                        className={styles.selectField}
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            const selectedUser = profiles.find(p => p.id === e.target.value);
-                            if (selectedUser && confirm(`Přidat uživatele ${selectedUser.full_name} k projektu?`)) {
-                              (async () => {
-                                const { error } = await supabase
-                                  .from('assignments')
-                                  .insert([{ 
-                                    project_id: selectedProject.id, 
-                                    user_id: selectedUser.id,
-                                    date: new Date().toISOString().split('T')[0]
-                                  }]);
+                  {selectedProject.id === 'new' ? (
+                    <p className={styles.infoMessage}>Před přiřazením týmu musíte projekt nejprve uložit.</p>
+                  ) : (
+                    <div className={styles.teamGrid}>
+                      {assignments.map((assignment) => (
+                        <div key={assignment.id} className={styles.teamMember}>
+                          <div className={styles.avatar}>
+                            {assignment.profiles?.full_name?.substring(0, 2).toUpperCase() || '??'}
+                          </div>
+                          <div className={styles.memberInfo}>
+                            <strong>{assignment.profiles?.full_name || 'Neznámý'}</strong>
+                            <span>{assignment.note || 'Člen týmu'}</span>
+                          </div>
+                          <button 
+                            className={styles.removeMember}
+                            onClick={async () => {
+                              if (confirm('Odebrat člena z projektu?')) {
+                                const { error } = await supabase.from('assignments').delete().eq('id', assignment.id);
                                 if (error) alert(error.message);
                                 else fetchAssignments(selectedProject.id);
-                              })();
+                              }
+                            }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                      
+                      <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Přidat člena:</label>
+                        <select 
+                          className={styles.selectField}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const selectedUser = profiles.find(p => p.id === e.target.value);
+                              if (selectedUser && confirm(`Přidat uživatele ${selectedUser.full_name} k projektu?`)) {
+                                (async () => {
+                                  const { error } = await supabase
+                                    .from('assignments')
+                                    .insert([{ 
+                                      project_id: selectedProject.id, 
+                                      user_id: selectedUser.id,
+                                      date: new Date().toISOString().split('T')[0]
+                                    }]);
+                                  if (error) alert(error.message);
+                                  else fetchAssignments(selectedProject.id);
+                                })();
+                              }
                             }
-                          }
-                        }}
-                      >
-                        <option value="">-- Vyberte zaměstnance --</option>
-                        {profiles.map(profile => (
-                          <option key={profile.id} value={profile.id}>{profile.full_name || profile.id}</option>
-                        ))}
-                      </select>
+                          }}
+                        >
+                          <option value="">-- Vyberte zaměstnance --</option>
+                          {profiles.map(profile => (
+                            <option key={profile.id} value={profile.id}>{profile.full_name || profile.id}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
 
             <div className={styles.modalFooter}>
               <button className={styles.cancelBtn} onClick={() => setSelectedProject(null)}>Zrušit</button>
-              <button className={styles.saveBtn}>
-                <Save size={18} /> Uložit změny
+              <button 
+                className={styles.saveBtn} 
+                onClick={handleSaveProject}
+                disabled={isSaving}
+              >
+                {isSaving ? 'Ukládám...' : <><Save size={18} /> Uložit změny</>}
               </button>
             </div>
           </div>

@@ -1,5 +1,18 @@
 -- Supabase Database Schema for BLP Interni System
 
+-- 0. Profiles Table (Extends auth.users)
+CREATE TABLE profiles (
+  id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  full_name TEXT,
+  email TEXT,
+  role TEXT DEFAULT 'employee' CHECK (role IN ('admin', 'employee')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+
 -- 1. Attendance Table
 CREATE TYPE attendance_type AS ENUM ('Travel', 'Točba', 'Rigg', 'Sklad', 'Volno M', 'Dovolená', 'Nemoc');
 
@@ -31,6 +44,8 @@ CREATE TABLE projects (
   material_list TEXT,
   status TEXT DEFAULT 'pending',
   color_code TEXT,
+  shooting TEXT,
+  preparation TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
@@ -138,3 +153,12 @@ CREATE POLICY "Events are visible to all employees" ON project_events
 ALTER TABLE assignments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Assignments are visible to all employees" ON assignments
   FOR SELECT USING (true);
+
+-- ADDED MISSING POLICIES FOR PROJECTS AND ASSIGNMENTS
+CREATE POLICY "Projects can be inserted" ON projects FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Projects can be updated" ON projects FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Projects can be deleted" ON projects FOR DELETE USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Assignments can be inserted" ON assignments FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Assignments can be updated" ON assignments FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Assignments can be deleted" ON assignments FOR DELETE USING (auth.role() = 'authenticated');

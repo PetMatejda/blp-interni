@@ -40,7 +40,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         setSession(session);
         setUser(session?.user ?? null);
-        if (session?.user) await ensureProfile(session.user);
+        // We don't await ensureProfile to avoid blocking the initial UI load
+        if (session?.user) ensureProfile(session.user);
       } catch (err) {
         console.error("Error getting session:", err);
       } finally {
@@ -50,6 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getSession();
 
+    // Safety timeout: If auth decision takes too long, unblock the UI anyway
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
     // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       try {
@@ -57,7 +63,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session) {
-          await ensureProfile(session.user);
+          // We don't await ensureProfile to avoid blocking the UI
+          ensureProfile(session.user);
           if (pathname === '/login') {
             router.push('/');
           }
@@ -70,12 +77,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.error("Error in onAuthStateChange:", err);
       } finally {
+        // Ensure loading is false once we have an auth state decision
         setLoading(false);
+        clearTimeout(timer);
       }
     });
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(timer);
     };
   }, [router, pathname]);
 
