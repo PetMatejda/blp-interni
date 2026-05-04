@@ -8,14 +8,17 @@ import {
   ChevronRight,
   Download,
   Plus,
-  Trash2,
   Edit2,
-  AlertTriangle
+  AlertTriangle,
+  X,
+  Save
 } from 'lucide-react';
 import styles from './page.module.css';
 import { useAttendance } from '@/hooks/useAttendance';
-import { format, differenceInSeconds } from 'date-fns';
+import { format, differenceInSeconds, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { cs } from 'date-fns/locale';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function AttendancePage() {
   const { 
@@ -25,10 +28,15 @@ export default function AttendancePage() {
     startSession, 
     endSession, 
     deleteRecord, 
-    updateRecord 
+    updateRecord,
+    refresh
   } = useAttendance();
+  const { user } = useAuth();
   const [selectedType, setSelectedType] = useState('Točba');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkDate, setBulkDate] = useState(new Date());
+  const [bulkData, setBulkData] = useState<any[]>([]);
   const [timer, setTimer] = useState('00:00:00');
 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
@@ -59,6 +67,77 @@ export default function AttendancePage() {
     });
     setEditingRecordId(record.id);
     setIsModalOpen(true);
+  };
+
+  const prepareBulkData = useCallback(() => {
+    const start = startOfMonth(bulkDate);
+    const end = endOfMonth(bulkDate);
+    const days = eachDayOfInterval({ start, end });
+
+    const newBulkData = days.map(day => {
+      // Find existing record for this day
+      const existing = history.find(h => isSameDay(new Date(h.check_in), day));
+      
+      return {
+        id: existing?.id || null,
+        date: day,
+        type: existing?.type || '',
+        check_in: existing ? format(new Date(existing.check_in), 'HH:mm') : '',
+        check_out: existing?.check_out ? format(new Date(existing.check_out), 'HH:mm') : '',
+        comment: existing?.comment || ''
+      };
+    });
+
+    setBulkData(newBulkData);
+  }, [bulkDate, history]);
+
+  useEffect(() => {
+    if (isBulkModalOpen) {
+      prepareBulkData();
+    }
+  }, [bulkDate, isBulkModalOpen, prepareBulkData]);
+
+  const updateBulkRow = (index: number, field: string, value: string) => {
+    const newData = [...bulkData];
+    newData[index][field] = value;
+    setBulkData(newData);
+  };
+
+  const handleSaveBulk = async () => {
+    if (!user) return;
+
+    const toUpsert = bulkData
+      .filter(row => row.type && row.check_in && row.check_out)
+      .map(row => {
+        const checkInISO = new Date(`${format(row.date, 'yyyy-MM-dd')}T${row.check_in}`).toISOString();
+        const checkOutISO = new Date(`${format(row.date, 'yyyy-MM-dd')}T${row.check_out}`).toISOString();
+        
+        return {
+          id: row.id,
+          user_id: user.id,
+          type: row.type,
+          check_in: checkInISO,
+          check_out: checkOutISO,
+          comment: row.comment || null
+        };
+      });
+
+    if (toUpsert.length === 0) {
+      setIsBulkModalOpen(false);
+      return;
+    }
+
+    const { error } = await supabase
+      .from('attendance')
+      .upsert(toUpsert);
+
+    if (error) {
+      console.error('Error saving bulk data:', error);
+      alert('Chyba při ukládání: ' + error.message);
+    } else {
+      setIsBulkModalOpen(false);
+      refresh();
+    }
   };
 
   const handleSaveModal = async () => {
@@ -103,9 +182,12 @@ export default function AttendancePage() {
           <p>Sledování času, typů docházky a historie.</p>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.secondaryBtn} onClick={() => setIsModalOpen(true)}>
+          <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => {
+            prepareBulkData();
+            setIsBulkModalOpen(true);
+          }}>
             <Plus size={18} />
-            Zadat zpětně
+            Hromadné zadání
           </button>
           <button className={styles.exportBtn}>
             <Download size={18} />
@@ -322,6 +404,99 @@ export default function AttendancePage() {
                   Uložit
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Bulk Entry Modal */}
+      {isBulkModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={`${styles.modal} ${styles.bulkModal}`}>
+            <div className={styles.modalHeader}>
+              <h3>Hromadné zadání - {format(bulkDate, 'LLLL yyyy', { locale: cs })}</h3>
+              <div className={styles.bulkNav}>
+                <button onClick={() => {
+                  const d = new Date(bulkDate);
+                  d.setMonth(d.getMonth() - 1);
+                  setBulkDate(d);
+                }}><ChevronLeft size={20} /></button>
+                <button onClick={() => {
+                  const d = new Date(bulkDate);
+                  if (d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear()) return;
+                  d.setMonth(d.getMonth() + 1);
+                  setBulkDate(d);
+                }} disabled={bulkDate.getMonth() === new Date().getMonth() && bulkDate.getFullYear() === new Date().getFullYear()}><ChevronRight size={20} /></button>
+                <button className={styles.closeBtn} onClick={() => setIsBulkModalOpen(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.bulkTableWrapper}>
+              <table className={styles.bulkTable}>
+                <thead>
+                  <tr>
+                    <th>Datum</th>
+                    <th>Typ</th>
+                    <th>Příchod</th>
+                    <th>Odchod</th>
+                    <th>Poznámka</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bulkData.map((row, idx) => (
+                    <tr key={idx}>
+                      <td className={styles.bulkDateCol}>
+                        {format(row.date, 'eeeeee d.M.', { locale: cs })}
+                      </td>
+                      <td>
+                        <select 
+                          value={row.type || ''} 
+                          onChange={(e) => updateBulkRow(idx, 'type', e.target.value)}
+                          className={styles.bulkInput}
+                        >
+                          <option value="">-</option>
+                          {ATTENDANCE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                          <option value="Pauza">Pauza</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input 
+                          type="time" 
+                          value={row.check_in || ''} 
+                          onChange={(e) => updateBulkRow(idx, 'check_in', e.target.value)}
+                          className={styles.bulkInput}
+                        />
+                      </td>
+                      <td>
+                        <input 
+                          type="time" 
+                          value={row.check_out || ''} 
+                          onChange={(e) => updateBulkRow(idx, 'check_out', e.target.value)}
+                          className={styles.bulkInput}
+                        />
+                      </td>
+                      <td>
+                        <input 
+                          type="text" 
+                          value={row.comment || ''} 
+                          onChange={(e) => updateBulkRow(idx, 'comment', e.target.value)}
+                          className={styles.bulkInput}
+                          placeholder="..."
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button className={styles.secondaryBtn} onClick={() => setIsBulkModalOpen(false)}>Zrušit</button>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleSaveBulk}>
+                <Save size={18} />
+                Uložit vše
+              </button>
             </div>
           </div>
         </div>

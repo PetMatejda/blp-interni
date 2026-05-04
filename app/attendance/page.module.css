@@ -406,3 +406,115 @@
   50% { opacity: 0.5; }
   100% { opacity: 1; }
 }
+
+.bulkModal {
+  max-width: 1000px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.bulkNav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bulkNav button {
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  background: var(--input);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+
+.bulkNav button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.closeBtn {
+  margin-left: 1rem;
+  color: var(--secondary);
+}
+
+.bulkTableWrapper {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+}
+
+.bulkTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bulkTable th {
+  position: sticky;
+  top: 0;
+  background: var(--input);
+  z-index: 10;
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+}
+
+.bulkTable td {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.bulkDateCol {
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--secondary);
+  background: var(--background);
+}
+
+.bulkInput {
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+
+.bulkInput:focus {
+  border-color: var(--primary);
+  background: var(--background);
+  outline: none;
+}
+
+.bulkInput[type="time"] {
+  font-family: inherit;
+}
+
+.btnPrimary {
+  background: var(--primary);
+  color: white;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.btnPrimary:hover {
+  filter: brightness(1.1);
+}
