@@ -62,6 +62,21 @@ export default function TasksPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
 
   const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getMonthName = (date: Date) => {
+    return date.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' });
+  };
+
+  const changeMonth = (delta: number) => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + delta);
+    setCurrentDate(newDate);
+  };
 
   const fetchProjects = useCallback(async () => {
     const { data, error } = await supabase
@@ -85,7 +100,7 @@ export default function TasksPage() {
   const fetchAllAssignments = useCallback(async () => {
     const { data, error } = await supabase
       .from('assignments')
-      .select('*, projects(title, color_code, status)');
+      .select('*, projects(title, color_code, status), profiles(full_name)');
     
     if (error) console.error('Error fetching all assignments:', error);
     else setAllAssignments(data || []);
@@ -259,7 +274,22 @@ export default function TasksPage() {
                   <div className={styles.assignedTeam}>
                     <Users size={16} />
                     <div className={styles.avatars}>
-                      <div className={styles.avatarMini} title="Více info v detailu">?</div>
+                      {allAssignments
+                        .filter(a => a.project_id === project.id)
+                        .slice(0, 3)
+                        .map((a, i) => (
+                          <div key={i} className={styles.avatarMini} title={a.profiles?.full_name || a.user_id}>
+                            {(a.profiles?.full_name || '??').substring(0, 2).toUpperCase()}
+                          </div>
+                        ))}
+                      {allAssignments.filter(a => a.project_id === project.id).length > 3 && (
+                        <div className={styles.avatarCount}>
+                          +{allAssignments.filter(a => a.project_id === project.id).length - 3}
+                        </div>
+                      )}
+                      {allAssignments.filter(a => a.project_id === project.id).length === 0 && (
+                        <div className={styles.avatarMini} title="Nikdo přiřazen">?</div>
+                      )}
                     </div>
                   </div>
                   <button 
@@ -280,9 +310,9 @@ export default function TasksPage() {
         <div className={styles.scheduleView}>
           <div className={styles.scheduleHeader}>
             <div className={styles.scheduleNav}>
-              <button><ChevronLeft size={20} /></button>
-              <h3>Květen 2026</h3>
-              <button><ChevronRight size={20} /></button>
+              <button onClick={() => changeMonth(-1)}><ChevronLeft size={20} /></button>
+              <h3 style={{ textTransform: 'capitalize' }}>{getMonthName(currentDate)}</h3>
+              <button onClick={() => changeMonth(1)}><ChevronRight size={20} /></button>
             </div>
             <div className={styles.legend}>
               <div className={styles.legendItem}><span className={styles.dot} style={{background: '#dcfce7'}}></span> Točba</div>
@@ -296,8 +326,8 @@ export default function TasksPage() {
               <thead>
                 <tr>
                   <th className={styles.stickyCol}>Jméno</th>
-                  {[...Array(31)].map((_, i) => (
-                    <th key={i}>{i + 1}.5.</th>
+                  {[...Array(getDaysInMonth(currentDate))].map((_, i) => (
+                    <th key={i}>{i + 1}.{currentDate.getMonth() + 1}.</th>
                   ))}
                 </tr>
               </thead>
@@ -305,9 +335,10 @@ export default function TasksPage() {
                 {profiles.map((worker) => (
                   <tr key={worker.id}>
                     <td className={styles.stickyCol}>{worker.full_name}</td>
-                    {[...Array(31)].map((_, day) => {
-                      const dateStr = `2026-05-${(day + 1).toString().padStart(2, '0')}`;
-                      const displayDate = `${day + 1}.5.`;
+                    {[...Array(getDaysInMonth(currentDate))].map((_, day) => {
+                      const dayNum = day + 1;
+                      const dateStr = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${dayNum.toString().padStart(2, '0')}`;
+                      const displayDate = `${dayNum}.${currentDate.getMonth() + 1}.`;
                       const assignment = allAssignments.find(a => a.user_id === worker.id && a.date === dateStr);
                       return (
                         <td 
