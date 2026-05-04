@@ -36,7 +36,7 @@ interface Project {
 interface ProjectEvent {
   id: string;
   project_id: string;
-  type: 'Rigging' | 'Shooting' | 'Travel' | 'Derigging' | 'Preparation';
+  type: 'Rigging' | 'Točba' | 'Travel (Tam)' | 'Travel (Zpět)' | 'Derigging' | 'Preparation';
   start_date: string;
   end_date: string;
   note?: string;
@@ -104,12 +104,21 @@ export default function TasksPage() {
     
     if (error) console.error('Error fetching projects:', error);
     else {
-      // Map events to projects
+      // Map events to projects and sort by earliest event date
       const projectsWithEvents = data?.map(p => ({
         ...p,
         events: p.project_events || []
       })) || [];
-      setProjects(projectsWithEvents);
+      
+      const sorted = [...projectsWithEvents].sort((a, b) => {
+        const aDate = a.events?.length ? Math.min(...a.events.map(e => new Date(e.start_date).getTime())) : Infinity;
+        const bDate = b.events?.length ? Math.min(...b.events.map(e => new Date(e.start_date).getTime())) : Infinity;
+        
+        if (aDate === bDate) return 0;
+        return aDate - bDate;
+      });
+
+      setProjects(sorted);
     }
   }, []);
 
@@ -452,7 +461,47 @@ export default function TasksPage() {
                   </div>
                 </div>
                 <div className={styles.sidebarSection}>
-                  <label>Termíny / Akce</label>
+                  <div className={styles.eventSectionHeader}>
+                    <label>Termíny / Akce</label>
+                    {selectedProject.id !== 'new' && (
+                      <button 
+                        className={styles.magicBtn}
+                        title="Extrahovat termíny z textu"
+                        onClick={async () => {
+                          const text = `${selectedProject.shooting || ''} ${selectedProject.preparation || ''} ${selectedProject.title || ''}`;
+                          const dateRegex = /(\d{1,2})\.\s?(\d{1,2})\.(?:\s?(\d{4}))?/g;
+                          const matches = [...text.matchAll(dateRegex)];
+                          
+                          for (const match of matches) {
+                            const day = parseInt(match[1]);
+                            const month = parseInt(match[2]) - 1;
+                            const year = match[3] ? parseInt(match[3]) : new Date().getFullYear();
+                            const date = new Date(year, month, day);
+                            const isoDate = format(date, 'yyyy-MM-dd');
+                            
+                            const context = text.substring(Math.max(0, match.index! - 20), Math.min(text.length, match.index! + 30)).toLowerCase();
+                            let type: any = 'Točba';
+                            if (context.includes('rig') || context.includes('stavba')) type = 'Rigging';
+                            if (context.includes('derig') || context.includes('bour')) type = 'Derigging';
+                            if (context.includes('trav') || context.includes('ces') || context.includes('tam')) type = 'Travel (Tam)';
+                            if (context.includes('zpět') || context.includes('návrat')) type = 'Travel (Zpět)';
+                            if (context.includes('příp') || context.includes('prep')) type = 'Preparation';
+
+                            await supabase.from('project_events').insert({
+                              project_id: selectedProject.id,
+                              type,
+                              start_date: isoDate,
+                              end_date: isoDate
+                            });
+                          }
+                          fetchProjects();
+                          alert('Termíny byly extrahovány.');
+                        }}
+                      >
+                        🪄
+                      </button>
+                    )}
+                  </div>
                   <div className={styles.eventList}>
                     {selectedProject.events?.map((event, idx) => (
                       <div key={idx} className={styles.eventItem}>
@@ -480,10 +529,11 @@ export default function TasksPage() {
                   <div className={styles.addEventForm}>
                     <select id="newEventType" className={styles.miniSelect}>
                       <option value="Rigging">Rigging</option>
-                      <option value="Shooting">Točení</option>
-                      <option value="Travel">Travel</option>
+                      <option value="Točba">Točba</option>
+                      <option value="Travel (Tam)">Travel (Tam)</option>
+                      <option value="Travel (Zpět)">Travel (Zpět)</option>
+                      <option value="Derigging">Derigging</option>
                       <option value="Preparation">Příprava</option>
-                      <option value="Derigging">Derigg</option>
                     </select>
                     <input type="date" id="newEventDate" className={styles.miniInput} />
                     <button 
@@ -493,17 +543,17 @@ export default function TasksPage() {
                         const date = (document.getElementById('newEventDate') as HTMLInputElement).value;
                         if (date && selectedProject.id !== 'new') {
                           const { error } = await supabase
-                            .from('project_events')
-                            .insert([{
-                              project_id: selectedProject.id,
-                              type,
-                              start_date: date,
-                              end_date: date
-                            }]);
-                          if (error) alert(error.message);
-                          else fetchProjects();
-                        }
-                      }}
+                             .from('project_events')
+                             .insert([{
+                               project_id: selectedProject.id,
+                               type,
+                               start_date: date,
+                               end_date: date
+                             }]);
+                           if (error) alert(error.message);
+                           else fetchProjects();
+                         }
+                       }}
                     >
                       <Plus size={14} />
                     </button>
