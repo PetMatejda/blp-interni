@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import { supabase } from '@/lib/supabase';
+import { format } from 'date-fns';
 
 interface Project {
   id: string;

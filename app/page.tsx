@@ -70,7 +70,7 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       // 1. Fetch project count
-      const { count: projCount } = await supabase
+      await supabase
         .from('projects')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'confirmed');
