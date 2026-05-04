@@ -106,9 +106,9 @@ export default function AttendancePage() {
     }
   }, [bulkDate, isBulkModalOpen, prepareBulkData]);
 
-  const updateBulkRow = (index: number, field: keyof BulkDayData, value: string) => {
+  const updateBulkRow = (index: number, field: 'type' | 'check_in' | 'check_out' | 'comment', value: string) => {
     const newData = [...bulkData];
-    (newData[index] as any)[field] = value;
+    newData[index] = { ...newData[index], [field]: value };
     setBulkData(newData);
   };
 
