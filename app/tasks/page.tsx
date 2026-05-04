@@ -45,13 +45,10 @@ interface Assignment {
   date: string;
   note?: string;
   profiles?: Profile;
+  projects?: { title: string, color_code: string, status: string };
 }
 
-const MOCK_SCHEDULE = [
-  { name: 'Marek Rad.', assignments: { '1.5.': 'Točba', '2.5.': 'Točba', '5.5.': 'Sklad' } },
-  { name: 'Petr Matej.', assignments: { '3.5.': 'Příprava', '4.5.': 'Sklad' } },
-  { name: 'Jan H.', assignments: { '10.5.': 'Točba' } }
-];
+
 
 export default function TasksPage() {
   const [view, setView] = useState<'list' | 'schedule'>('list');
@@ -64,7 +61,7 @@ export default function TasksPage() {
   const [newMaterial, setNewMaterial] = useState('');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
 
-  const [allAssignments, setAllAssignments] = useState<any[]>([]);
+  const [allAssignments, setAllAssignments] = useState<Assignment[]>([]);
 
   const fetchProjects = useCallback(async () => {
     const { data, error } = await supabase

@@ -47,6 +47,7 @@ export default function AttendancePage() {
     comment: ''
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleEdit = (record: any) => {
     const checkInDate = new Date(record.check_in);
     setFormData({
