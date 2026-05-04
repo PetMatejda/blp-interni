@@ -1,0 +1,182 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.titleArea h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.titleArea p {
+  color: var(--secondary);
+  font-size: 0.9rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 1rem;
+}
+
+.exportBtn, .secondaryBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.exportBtn {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.exportBtn:hover {
+  opacity: 0.9;
+}
+
+.secondaryBtn:hover {
+  background: var(--input);
+}
+
+.reportControls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+}
+
+.dateSelector {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.currentMonth {
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: 'Outfit', sans-serif;
+  color: var(--primary);
+}
+
+.summaryInfo {
+  display: flex;
+  gap: 2rem;
+  font-size: 0.875rem;
+  color: var(--secondary);
+}
+
+.summaryInfo strong {
+  color: var(--foreground);
+}
+
+.tableCard {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.table th {
+  background: #fbbf24; /* Yellow from image, but slightly softer */
+  color: #78350f;
+  padding: 1rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-right: 1px solid rgba(0,0,0,0.05);
+}
+
+.table td {
+  padding: 1rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  font-size: 0.875rem;
+}
+
+.stickyCol {
+  position: sticky;
+  left: 0;
+  background: var(--card);
+  z-index: 10;
+  text-align: left !important;
+  font-weight: 700;
+  min-width: 160px;
+  border-right: 2px solid var(--border) !important;
+}
+
+.workerName {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.workerIcon {
+  color: var(--secondary);
+}
+
+.timeCell {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+}
+
+.normCell {
+  color: var(--secondary);
+}
+
+.diffBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.diffPositive {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.diffNegative {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.drillDownBtn {
+  padding: 0.4rem;
+  border-radius: var(--radius-sm);
+  color: var(--secondary);
+  transition: all 0.2s ease;
+}
+
+.drillDownBtn:hover {
+  background: var(--input);
+  color: var(--primary);
+}
