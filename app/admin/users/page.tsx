@@ -6,8 +6,6 @@ import { createBrowserClient } from '@supabase/ssr';
 import styles from './page.module.css';
 import { User, Shield, ShieldAlert, Trash2, Edit } from 'lucide-react';
 
-const ADMIN_EMAIL = 'petmatejda@gmail.com';
-
 interface Profile {
   id: string;
   full_name: string | null;
@@ -16,7 +14,7 @@ interface Profile {
 }
 
 export default function UserManagementPage() {
-  const { user } = useAuth();
+  const { profile, loading: authLoading } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +44,14 @@ export default function UserManagementPage() {
   }, [supabase]);
 
   useEffect(() => {
-    if (user?.email?.toLowerCase() === ADMIN_EMAIL) {
-      fetchProfiles();
-    } else if (user) {
-      setLoading(false);
+    if (!authLoading) {
+      if (profile?.role === 'admin') {
+        fetchProfiles();
+      } else {
+        setLoading(false);
+      }
     }
-  }, [user, fetchProfiles]);
+  }, [profile, authLoading, fetchProfiles]);
 
   async function toggleRole(profileId: string, currentRole: string) {
     if (!confirm('Opravdu chcete změnit roli tohoto uživatele?')) return;
@@ -71,17 +71,35 @@ export default function UserManagementPage() {
     }
   }
 
-  if (loading) {
+  async function editName(profileId: string, currentName: string | null) {
+    const newName = prompt('Zadejte nové jméno uživatele:', currentName || '');
+    if (newName !== null && newName.trim() !== '') {
+      try {
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ full_name: newName.trim() })
+          .eq('id', profileId);
+
+        if (updateError) throw updateError;
+        fetchProfiles();
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        alert('Chyba při změně jména: ' + errorMessage);
+      }
+    }
+  }
+
+  if (loading || authLoading) {
     return <div className={styles.container}><p>Načítání...</p></div>;
   }
 
-  if (user?.email?.toLowerCase() !== ADMIN_EMAIL) {
+  if (profile?.role !== 'admin') {
     return (
       <div className={styles.container}>
         <div className={styles.error}>
           <ShieldAlert size={48} style={{ marginBottom: '1rem' }} />
           <h3>Přístup odepřen</h3>
-          <p>Tato stránka je dostupná pouze pro hlavního administrátora ({ADMIN_EMAIL}).</p>
+          <p>Tato stránka je dostupná pouze pro administrátory.</p>
         </div>
       </div>
     );
@@ -112,36 +130,40 @@ export default function UserManagementPage() {
           </thead>
           <tbody>
             {profiles.length > 0 ? (
-              profiles.map((profile) => (
-                <tr key={profile.id}>
+              profiles.map((p) => (
+                <tr key={p.id}>
                   <td>
                     <div className={styles.userInfo}>
                       <div className={styles.avatar}>
-                        {profile.full_name?.charAt(0) || <User size={14} />}
+                        {p.full_name?.charAt(0) || <User size={14} />}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 500 }}>{profile.full_name || 'Neznámé jméno'}</div>
+                        <div style={{ fontWeight: 500 }}>{p.full_name || 'Neznámé jméno'}</div>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <span className={`${styles.roleBadge} ${styles[profile.role]}`}>
-                      {profile.role === 'admin' ? 'Administrátor' : 'Zaměstnanec'}
+                    <span className={`${styles.roleBadge} ${styles[p.role]}`}>
+                      {p.role === 'admin' ? 'Administrátor' : 'Zaměstnanec'}
                     </span>
                   </td>
                   <td style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#666' }}>
-                    {profile.id.substring(0, 8)}...
+                    {p.id.substring(0, 8)}...
                   </td>
                   <td>
                     <div className={styles.actions}>
                       <button 
                         className={styles.actionBtn} 
                         title="Změnit roli"
-                        onClick={() => toggleRole(profile.id, profile.role)}
+                        onClick={() => toggleRole(p.id, p.role)}
                       >
                         <Shield size={16} />
                       </button>
-                      <button className={styles.actionBtn} title="Upravit">
+                      <button 
+                        className={styles.actionBtn} 
+                        title="Upravit jméno"
+                        onClick={() => editName(p.id, p.full_name)}
+                      >
                         <Edit size={16} />
                       </button>
                       <button className={styles.actionBtn} title="Smazat">

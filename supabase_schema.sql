@@ -85,6 +85,14 @@ CREATE POLICY "Users can view their own attendance" ON attendance
 CREATE POLICY "Users can insert their own attendance" ON attendance
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+-- Users can update their own attendance
+CREATE POLICY "Users can update their own attendance" ON attendance
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Users can delete their own attendance
+CREATE POLICY "Users can delete their own attendance" ON attendance
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- Users can see their own receipts
 CREATE POLICY "Users can view their own receipts" ON receipts
   FOR SELECT USING (auth.uid() = user_id);
@@ -92,6 +100,31 @@ CREATE POLICY "Users can view their own receipts" ON receipts
 -- Users can insert their own receipts
 CREATE POLICY "Users can insert their own receipts" ON receipts
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Users can update their own receipts
+CREATE POLICY "Users can update their own receipts" ON receipts
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Users can delete their own receipts
+CREATE POLICY "Users can delete their own receipts" ON receipts
+  FOR DELETE USING (auth.uid() = user_id);
+
+-- Admins can view and update all receipts
+CREATE POLICY "Admins can view all receipts" ON receipts
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM profiles 
+      WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
+    )
+  );
+
+CREATE POLICY "Admins can update all receipts" ON receipts
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM profiles 
+      WHERE profiles.id = auth.uid() AND profiles.role = 'admin'
+    )
+  );
 
 -- Projects and Events are public (or shared within firm)
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;

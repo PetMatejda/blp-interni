@@ -20,17 +20,50 @@ import styles from './page.module.css';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 
+interface Project {
+  id: string;
+  title: string;
+  client: string;
+  location: string;
+  material_list: string;
+  status: string;
+  color_code: string;
+  shooting?: string;
+  preparation?: string;
+}
+
+interface Profile {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+}
+
+interface Assignment {
+  id: string;
+  project_id: string;
+  user_id: string;
+  date: string;
+  note?: string;
+  profiles?: Profile;
+}
+
+const MOCK_SCHEDULE = [
+  { name: 'Marek Rad.', assignments: { '1.5.': 'Točba', '2.5.': 'Točba', '5.5.': 'Sklad' } },
+  { name: 'Petr Matej.', assignments: { '3.5.': 'Příprava', '4.5.': 'Sklad' } },
+  { name: 'Jan H.', assignments: { '10.5.': 'Točba' } }
+];
+
 export default function TasksPage() {
-  const { user: currentUser } = useAuth();
   const [view, setView] = useState<'list' | 'schedule'>('list');
-  const [projects, setProjects] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [editingAssignment, setEditingAssignment] = useState<{name: string, date: string} | null>(null);
   const [materialList, setMaterialList] = useState<string[]>([]);
   const [newMaterial, setNewMaterial] = useState('');
-  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
 
   const fetchProjects = useCallback(async () => {
     const { data, error } = await supabase
@@ -75,25 +108,6 @@ export default function TasksPage() {
       fetchAssignments(selectedProject.id);
     }
   }, [selectedProject, fetchAssignments]);
-
-  const handleAddMember = async () => {
-    const userId = prompt('Zadejte ID uživatele nebo vyberte ze seznamu (v budoucnu):');
-    if (!userId || !selectedProject) return;
-
-    const { error } = await supabase
-      .from('assignments')
-      .insert([{ 
-        project_id: selectedProject.id, 
-        user_id: userId,
-        date: new Date().toISOString().split('T')[0] // Default to today
-      }]);
-
-    if (error) {
-      alert('Chyba při přidávání člena: ' + error.message);
-    } else {
-      fetchAssignments(selectedProject.id);
-    }
-  };
 
   const handleAddMaterial = () => {
     if (newMaterial.trim()) {

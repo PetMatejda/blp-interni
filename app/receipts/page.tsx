@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   Camera, 
   Upload, 
@@ -12,61 +12,41 @@ import {
   CreditCard,
   Search,
   Eye,
-  Filter
+  Filter,
+  Trash2,
+  XCircle,
+  Loader
 } from 'lucide-react';
 import styles from './page.module.css';
+import { useAuth } from '@/components/AuthProvider';
+import { createBrowserClient } from '@supabase/ssr';
+import { format } from 'date-fns';
 
 interface Receipt {
   id: string;
-  user: string;
+  user_id: string;
   amount: number;
   currency: string;
   date: string;
   description: string;
-  paymentType: 'company' | 'personal';
-  status: 'pending' | 'approved' | 'paid';
-  imageUrl: string;
+  payment_type: 'company' | 'personal';
+  status: 'pending' | 'approved' | 'rejected' | 'paid';
+  image_url: string;
+  category: string;
+  profiles?: { full_name: string | null };
 }
 
-const MOCK_RECEIPTS: Receipt[] = [
-  {
-    id: '1',
-    user: 'Marek Rad.',
-    amount: 1540,
-    currency: 'CZK',
-    date: '2026-05-01',
-    description: 'Benzín - Stillking zakázka',
-    paymentType: 'company',
-    status: 'approved',
-    imageUrl: 'https://via.placeholder.com/150'
-  },
-  {
-    id: '2',
-    user: 'Petr Matej.',
-    amount: 450,
-    currency: 'CZK',
-    date: '2026-05-03',
-    description: 'Oběd s klientem (GALAXY)',
-    paymentType: 'personal',
-    status: 'pending',
-    imageUrl: 'https://via.placeholder.com/150'
-  }
-];
-
-import { useAuth } from '@/components/AuthProvider';
-
-const ADMIN_EMAIL = 'petmatejda@gmail.com';
-
 export default function ReceiptsPage() {
-  const { user } = useAuth();
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const { user, profile, loading: authLoading } = useAuth();
+  const [capturedImage, setCapturedImage] = useState<{ url: string; type: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'upload' | 'confirm'>('upload');
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const isUserAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
-  const [isAdmin, setIsAdmin] = useState(false); 
+  const isAdmin = profile?.role === 'admin';
+  const [adminView, setAdminView] = useState(false); 
 
-  // OCR simulation state
   const [extractedData, setExtractedData] = useState({
     amount: '',
     date: new Date().toISOString().split('T')[0],
@@ -76,13 +56,44 @@ export default function ReceiptsPage() {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
+  const fetchReceipts = useCallback(async () => {
+    if (!user) return;
+    setIsLoading(true);
+    
+    try {
+      let query = supabase.from('receipts').select('*, profiles(full_name)').order('date', { ascending: false });
+      
+      if (!adminView) {
+        query = query.eq('user_id', user.id);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      setReceipts(data as unknown as Receipt[]);
+    } catch (err) {
+      console.error('Error fetching receipts:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, adminView, supabase]);
+
+  useEffect(() => {
+    fetchReceipts();
+  }, [fetchReceipts]);
 
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const fileType = file.type;
       const reader = new FileReader();
       reader.onload = (event) => {
-        setCapturedImage(event.target?.result as string);
+        setCapturedImage({ url: event.target?.result as string, type: fileType });
         startOcrSimulation();
       };
       reader.readAsDataURL(file);
@@ -98,12 +109,37 @@ export default function ReceiptsPage() {
       setExtractedData({
         amount: (Math.random() * 2000 + 100).toFixed(0),
         date: new Date().toISOString().split('T')[0],
-        description: '',
+        description: 'Vytěženo automaticky',
         category: 'BLP',
         paymentType: 'personal'
       });
       setIsProcessing(false);
     }, 2000);
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+    try {
+      const { error } = await supabase.from('receipts').insert([{
+        user_id: user.id,
+        amount: parseFloat(extractedData.amount) || 0,
+        currency: 'CZK',
+        date: extractedData.date,
+        description: extractedData.description,
+        payment_type: extractedData.paymentType,
+        category: extractedData.category,
+        status: 'pending',
+        image_url: capturedImage?.url || ''
+      }]);
+
+      if (error) throw error;
+      
+      handleReset();
+      fetchReceipts();
+    } catch (err) {
+      console.error('Chyba při ukládání účtenky:', err);
+      alert('Chyba při ukládání účtenky.');
+    }
   };
 
   const handleReset = () => {
@@ -118,6 +154,31 @@ export default function ReceiptsPage() {
     });
   };
 
+  const updateStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase.from('receipts').update({ status }).eq('id', id);
+      if (error) throw error;
+      fetchReceipts();
+    } catch (err) {
+      console.error('Chyba při aktualizaci statusu:', err);
+      alert('Nemáte oprávnění nebo došlo k chybě.');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Opravdu chcete smazat tuto účtenku?')) return;
+    try {
+      const { error } = await supabase.from('receipts').delete().eq('id', id);
+      if (error) throw error;
+      fetchReceipts();
+    } catch (err) {
+      console.error('Chyba při mazání:', err);
+      alert('Chyba při mazání účtenky.');
+    }
+  };
+
+  if (authLoading) return <div style={{ padding: '2rem' }}>Načítání...</div>;
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -125,14 +186,14 @@ export default function ReceiptsPage() {
           <h2>Skenování účtenek</h2>
           <p>Vyfoťte nebo nahrajte doklad pro proplacení nebo evidenci nákladů.</p>
         </div>
-        {isUserAdmin && (
-          <button className={styles.adminToggle} onClick={() => setIsAdmin(!isAdmin)}>
-            {isAdmin ? 'Zobrazit moje účtenky' : 'Administrace (Admin View)'}
+        {isAdmin && (
+          <button className={styles.adminToggle} onClick={() => setAdminView(!adminView)}>
+            {adminView ? 'Zobrazit moje účtenky' : 'Administrace (Admin View)'}
           </button>
         )}
       </div>
 
-      {!isAdmin ? (
+      {!adminView ? (
         <div className={styles.userView}>
           {step === 'upload' ? (
             <div className={styles.uploadCard}>
@@ -150,7 +211,7 @@ export default function ReceiptsPage() {
                   type="file" 
                   ref={fileInputRef} 
                   hidden 
-                  accept="image/*" 
+                  accept="image/*,application/pdf" 
                   onChange={handleUpload} 
                 />
               </div>
@@ -162,8 +223,14 @@ export default function ReceiptsPage() {
           ) : (
             <div className={styles.confirmView}>
               <div className={styles.receiptPreview}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={capturedImage!} alt="Receipt" />
+                {capturedImage?.type === 'application/pdf' ? (
+                  <object data={capturedImage.url} type="application/pdf" width="100%" height="400px">
+                    <p>PDF náhled není dostupný v tomto prohlížeči.</p>
+                  </object>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={capturedImage?.url} alt="Receipt" />
+                )}
                 {isProcessing && (
                   <div className={styles.ocrOverlay}>
                     <div className={styles.spinner}></div>
@@ -219,20 +286,20 @@ export default function ReceiptsPage() {
                         className={extractedData.paymentType === 'company' ? styles.active : ''}
                         onClick={() => setExtractedData({...extractedData, paymentType: 'company'})}
                       >
-                        Firemní peníze (karta/hotovost)
+                        Firemní peníze
                       </button>
                       <button 
                         className={extractedData.paymentType === 'personal' ? styles.active : ''}
                         onClick={() => setExtractedData({...extractedData, paymentType: 'personal'})}
                       >
-                        Soukromé peníze (k proplacení)
+                        K proplacení
                       </button>
                     </div>
                   </div>
                 </div>
                 <div className={styles.formActions}>
                   <button className={styles.cancelBtn} onClick={handleReset}>Zrušit</button>
-                  <button className={styles.saveBtn} onClick={handleReset}>
+                  <button className={styles.saveBtn} onClick={handleSave} disabled={isProcessing}>
                     <Check size={20} /> Odeslat ke schválení
                   </button>
                 </div>
@@ -242,26 +309,34 @@ export default function ReceiptsPage() {
 
           <section className={styles.historySection}>
             <h3>Moje nedávné účtenky</h3>
-            <div className={styles.receiptList}>
-              {MOCK_RECEIPTS.map(r => (
-                <div key={r.id} className={styles.receiptRow}>
-                  <div className={styles.rIcon}><FileText size={20} /></div>
-                  <div className={styles.rMain}>
-                    <strong>{r.description}</strong>
-                    <span>{r.date}</span>
+            {isLoading ? <p>Načítání...</p> : (
+              <div className={styles.receiptList}>
+                {receipts.length === 0 && <p style={{color: '#666'}}>Zatím žádné účtenky.</p>}
+                {receipts.map(r => (
+                  <div key={r.id} className={styles.receiptRow}>
+                    <div className={styles.rIcon}><FileText size={20} /></div>
+                    <div className={styles.rMain}>
+                      <strong>{r.description}</strong>
+                      <span>{format(new Date(r.date), 'dd.MM.yyyy')}</span>
+                    </div>
+                    <div className={styles.rAmount}>
+                      <strong>{r.amount} {r.currency}</strong>
+                      <span className={styles[r.payment_type]}>
+                        {r.payment_type === 'company' ? 'Firemní' : 'K proplacení'}
+                      </span>
+                    </div>
+                    <div className={`${styles.status} ${styles[r.status]}`}>
+                      {r.status === 'pending' ? 'Čeká' : r.status === 'approved' ? 'Schváleno' : r.status === 'rejected' ? 'Zamítnuto' : r.status}
+                    </div>
+                    {r.status === 'pending' && (
+                      <button className={styles.deleteBtnIcon} onClick={() => handleDelete(r.id)} title="Smazat účtenku">
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </div>
-                  <div className={styles.rAmount}>
-                    <strong>{r.amount} {r.currency}</strong>
-                    <span className={styles[r.paymentType]}>
-                      {r.paymentType === 'company' ? 'Firemní' : 'K proplacení'}
-                    </span>
-                  </div>
-                  <div className={`${styles.status} ${styles[r.status]}`}>
-                    {r.status}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
       ) : (
@@ -269,7 +344,7 @@ export default function ReceiptsPage() {
           <div className={styles.adminToolbar}>
             <div className={styles.search}>
               <Search size={18} />
-              <input type="text" placeholder="Hledat podle jména, účelu..." />
+              <input type="text" placeholder="Hledat podle účelu..." />
             </div>
             <div className={styles.filters}>
               <button className={styles.filterBtn}><Filter size={18} /> Filtry</button>
@@ -290,35 +365,46 @@ export default function ReceiptsPage() {
               </tr>
             </thead>
             <tbody>
-              {[...MOCK_RECEIPTS, ...MOCK_RECEIPTS].map((r, i) => (
-                <tr key={i}>
-                  <td>
-                    <div className={styles.userName}>
-                      <div className={styles.miniAvatar}>{r.user.charAt(0)}</div>
-                      {r.user}
-                    </div>
-                  </td>
-                  <td>{r.date}</td>
-                  <td>{r.description}</td>
-                  <td><strong>{r.amount} {r.currency}</strong></td>
-                  <td>
-                    <span className={`${styles.typeBadge} ${styles[r.paymentType]}`}>
-                      {r.paymentType === 'company' ? 'Firemní' : 'Soukromé'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`${styles.statusBadge} ${styles[r.status]}`}>
-                      {r.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className={styles.actions}>
-                      <button title="Zobrazit detail"><Eye size={16} /></button>
-                      <button className={styles.approveBtn} title="Schválit"><Check size={16} /></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {isLoading ? (
+                <tr><td colSpan={7} style={{textAlign:'center', padding:'2rem'}}><Loader className={styles.spinner} /></td></tr>
+              ) : receipts.length === 0 ? (
+                <tr><td colSpan={7} style={{textAlign:'center', padding:'2rem', color:'#666'}}>Žádné účtenky k zobrazení.</td></tr>
+              ) : (
+                receipts.map((r) => (
+                  <tr key={r.id}>
+                    <td>
+                      <div className={styles.userName}>
+                        <div className={styles.miniAvatar}>{r.profiles?.full_name?.charAt(0) || '?'}</div>
+                        {r.profiles?.full_name || 'Neznámý'}
+                      </div>
+                    </td>
+                    <td>{format(new Date(r.date), 'dd.MM.yyyy')}</td>
+                    <td>{r.description}</td>
+                    <td><strong>{r.amount} {r.currency}</strong></td>
+                    <td>
+                      <span className={`${styles.typeBadge} ${styles[r.payment_type]}`}>
+                        {r.payment_type === 'company' ? 'Firemní' : 'Soukromé'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`${styles.statusBadge} ${styles[r.status]}`}>
+                        {r.status === 'pending' ? 'Čeká' : r.status === 'approved' ? 'Schváleno' : r.status === 'rejected' ? 'Zamítnuto' : r.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className={styles.actions}>
+                        <button title="Zobrazit detail"><Eye size={16} /></button>
+                        {r.status === 'pending' && (
+                          <>
+                            <button className={styles.approveBtn} title="Schválit" onClick={() => updateStatus(r.id, 'approved')}><Check size={16} /></button>
+                            <button className={styles.rejectBtn} title="Zamítnout" onClick={() => updateStatus(r.id, 'rejected')}><XCircle size={16} color="#ef4444" /></button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

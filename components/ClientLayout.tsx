@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
@@ -67,9 +67,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                 {user.email?.substring(0, 2).toUpperCase()}
               </div>
               <div className="user-info">
-                <span className="user-name">{user.user_metadata.full_name || user.email}</span>
+                <span className="user-name">{profile?.full_name || user.user_metadata.full_name || user.email}</span>
                 <span className="user-role">
-                  {user.email?.toLowerCase() === 'petmatejda@gmail.com' ? 'Administrátor' : 'Zaměstnanec'}
+                  {profile?.role === 'admin' ? 'Administrátor' : 'Zaměstnanec'}
                 </span>
               </div>
             </div>

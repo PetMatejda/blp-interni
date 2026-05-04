@@ -20,7 +20,7 @@ export default function LoginPage() {
     <div className={styles.container}>
       <div className={styles.loginCard}>
         <div className={styles.logo}>
-          <h1>BLP</h1>
+          <img src="/logo.png" alt="BLP Logo" style={{ height: '64px', width: 'auto', objectFit: 'contain', background: '#fff', padding: '8px', borderRadius: '8px', marginBottom: '1rem' }} />
           <p>Interní systém</p>
         </div>
         

@@ -11,14 +11,18 @@ import {
 import styles from './page.module.css';
 import { useAttendance } from '@/hooks/useAttendance';
 import { format } from 'date-fns';
-import { cs } from 'date-fns/locale';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function Home() {
+  const { user: currentUser } = useAuth();
   const { activeSession, startSession, endSession, loading, history } = useAttendance();
   const [dashType, setDashType] = useState('Sklad');
   const [activeProjectsCount, setActiveProjectsCount] = useState(0);
+  const [upcomingProjects, setUpcomingProjects] = useState<any[]>([]);
+  const [receiptStats, setReceiptStats] = useState({ count: 0, total: 0 });
+  const [myTasks, setMyTasks] = useState<any[]>([]);
 
   // Calculate monthly hours from history
   const monthlyHours = history.reduce((acc, record) => {
@@ -36,17 +40,50 @@ export default function Home() {
   }, 0);
 
   useEffect(() => {
-    const fetchProjectCount = async () => {
-      const { count, error } = await supabase
+    const fetchData = async () => {
+      // 1. Fetch project count
+      const { count: projCount } = await supabase
         .from('projects')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'confirmed');
       
-      if (!error) setActiveProjectsCount(count || 0);
+      setActiveProjectsCount(projCount || 0);
+
+      // 2. Fetch upcoming projects (first 2)
+      const { data: projData } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('status', 'confirmed')
+        .limit(2);
+      
+      setUpcomingProjects(projData || []);
+
+      // 3. Fetch receipt stats for current user
+      if (currentUser) {
+        const { data: recData } = await supabase
+          .from('receipts')
+          .select('amount')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'pending');
+        
+        if (recData) {
+          const total = recData.reduce((sum, r) => sum + Number(r.amount), 0);
+          setReceiptStats({ count: recData.length, total });
+        }
+
+        // 4. Fetch my tasks (assignments)
+        const { data: taskData } = await supabase
+          .from('assignments')
+          .select('*, projects(*)')
+          .eq('user_id', currentUser.id)
+          .limit(3);
+        
+        setMyTasks(taskData || []);
+      }
     };
     
-    fetchProjectCount();
-  }, []);
+    fetchData();
+  }, [currentUser]);
 
   const handleStartPauza = async () => {
     await startSession('Volno M', 'Pauza z dashboardu');
@@ -55,7 +92,7 @@ export default function Home() {
   const handleEndSession = async () => {
     const result = await endSession();
     if (result.error) {
-      alert('Chyba při ukončování: ' + (result.error as any).message);
+      alert('Chyba při ukončování: ' + (result.error instanceof Error ? result.error.message : String(result.error)));
     }
   };
 
@@ -76,38 +113,30 @@ export default function Home() {
             </div>
           </div>
         </div>
-        {/* Tasks Section */}
+
         <section className={styles.tasksSection}>
           <div className={styles.sectionHeader}>
             <h3>Nadcházející Projekty</h3>
             <button className={styles.viewAll}>Zobrazit vše</button>
           </div>
           <div className={styles.taskGrid}>
-            <div className={styles.taskCard}>
-              <div className={styles.taskStatus}>Confirmed</div>
-              <h4>Tom Ford Movie</h4>
-              <p>Regia Caserta • Točení: 9-12.3.</p>
-              <div className={styles.taskMeta}>
-                <span>Riccardo</span>
-                <div className={styles.teamAvatars}>
-                  <div className={styles.miniAvatar}>MR</div>
-                  <div className={styles.miniAvatar}>PM</div>
+            {upcomingProjects.length === 0 && <p style={{ fontSize: '0.9rem', color: '#64748b' }}>Žádné aktivní projekty.</p>}
+            {upcomingProjects.map(project => (
+              <div key={project.id} className={styles.taskCard}>
+                <div className={styles.taskStatus}>{project.status}</div>
+                <h4>{project.title}</h4>
+                <p>{project.client} • {project.location}</p>
+                <div className={styles.taskMeta}>
+                  <span>Termín v detailu</span>
+                  <div className={styles.teamAvatars}>
+                    <div className={styles.miniAvatar}>?</div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className={styles.taskCard}>
-              <div className={styles.taskStatus}>Pending</div>
-              <h4>GALAXY TWILIGHT</h4>
-              <p>HARRIS OFFICE • Točení: 12.3.</p>
-              <div className={styles.taskMeta}>
-                <span>GALAXY</span>
-                <div className={styles.teamAvatars}>
-                  <div className={styles.miniAvatar}>JH</div>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         </section>
+
         <div className={styles.card}>
           <div className={styles.statCard}>
             <span className={styles.statLabel}>Aktivní zakázky</span>
@@ -117,13 +146,14 @@ export default function Home() {
             </div>
           </div>
         </div>
+
         <div className={styles.card}>
           <div className={styles.statCard}>
-            <span className={styles.statLabel}>Nevyúčtované účtenky</span>
-            <span className={styles.statValue}>12</span>
-            <div className={`${styles.statTrend} ${styles.trendDown}`}>
+            <span className={styles.statLabel}>Moje účtenky</span>
+            <span className={styles.statValue}>{receiptStats.count}</span>
+            <div className={`${styles.statTrend} ${receiptStats.count > 0 ? styles.trendDown : styles.trendUp}`}>
               <AlertCircle size={12} />
-              <span>Celkem 3 450 Kč</span>
+              <span>Celkem {receiptStats.total.toLocaleString()} Kč</span>
             </div>
           </div>
         </div>
@@ -194,28 +224,19 @@ export default function Home() {
       <div className={`${styles.card} ${styles.tasksCard}`}>
         <h2 className={styles.cardTitle}>
           <Film size={20} />
-          Moje úkoly (Filmy)
+          Moje úkoly (Projekty)
         </h2>
         
         <div className={styles.taskList}>
-          <div className={styles.taskItem}>
-            <div className={styles.taskInfo}>
-              <span className={styles.taskTitle}>Korelace barev - Reklama Škoda</span>
-              <span className={styles.taskMeta}>Termín: Zítra • Priorita: Vysoká</span>
+          {myTasks.length === 0 && <p style={{ fontSize: '0.9rem', color: '#64748b', padding: '1rem' }}>Nemáte přiřazené žádné projekty.</p>}
+          {myTasks.map(task => (
+            <div key={task.id} className={styles.taskItem}>
+              <div className={styles.taskInfo}>
+                <span className={styles.taskTitle}>{task.projects?.title}</span>
+                <span className={styles.taskMeta}>Datum: {task.date} • {task.note || 'Přiřazeno'}</span>
+              </div>
             </div>
-          </div>
-          <div className={styles.taskItem}>
-            <div className={styles.taskInfo}>
-              <span className={styles.taskTitle}>Střih teaseru - Dokument Alpy</span>
-              <span className={styles.taskMeta}>Termín: 12. 5. • Priorita: Střední</span>
-            </div>
-          </div>
-          <div className={styles.taskItem}>
-            <div className={styles.taskInfo}>
-              <span className={styles.taskTitle}>Záloha dat - Projekt Praha</span>
-              <span className={styles.taskMeta}>Termín: Dnes • Priorita: Nízká</span>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

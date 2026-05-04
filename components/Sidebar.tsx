@@ -29,9 +29,9 @@ const navItems = [
 ];
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { signOut, user } = useAuth();
+  const { signOut, profile } = useAuth();
   const pathname = usePathname();
-  const isAdmin = user?.email?.toLowerCase() === 'petmatejda@gmail.com';
+  const isAdmin = profile?.role === 'admin';
 
   const finalNavItems = [...navItems];
   if (isAdmin) {
@@ -41,7 +41,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
       <div className={styles.logo}>
-        <div className={styles.logoIcon}>BLP</div>
+        <img src="/logo.png" alt="BLP Logo" className={styles.logoImage} style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
         <span className={styles.logoText}>Interní</span>
         {onClose && (
           <button className={styles.mobileClose} onClick={onClose}>

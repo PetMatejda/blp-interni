@@ -361,6 +361,22 @@
 .status.pending { background: #fef3c7; color: #b45309; }
 .status.approved { background: #dcfce7; color: #15803d; }
 .status.paid { background: #dbeafe; color: #1d4ed8; }
+.status.rejected { background: #fee2e2; color: #ef4444; }
+
+.deleteBtnIcon {
+  background: none;
+  border: none;
+  color: var(--secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.deleteBtnIcon:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
 
 /* Admin View */
 .adminView {
@@ -471,6 +487,7 @@
 
 .statusBadge.pending { background: #f3f4f6; color: #4b5563; }
 .statusBadge.approved { background: #dcfce7; color: #15803d; }
+.statusBadge.rejected { background: #fee2e2; color: #ef4444; }
 
 .actions {
   display: flex;
@@ -492,4 +509,9 @@
 .approveBtn:hover {
   color: #10b981 !important;
   background: #dcfce7 !important;
+}
+
+.rejectBtn:hover {
+  color: #ef4444 !important;
+  background: #fee2e2 !important;
 }
