@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 import styles from './page.module.css';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/components/AuthProvider';
 
 interface Project {
   id: string;

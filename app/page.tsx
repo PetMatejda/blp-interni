@@ -15,14 +15,31 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 
+interface Project {
+  id: string;
+  title: string;
+  client: string;
+  location: string;
+  status: string;
+}
+
+interface Task {
+  id: string;
+  date: string;
+  note: string;
+  projects?: {
+    title: string;
+  };
+}
+
 export default function Home() {
   const { user: currentUser } = useAuth();
   const { activeSession, startSession, endSession, loading, history } = useAttendance();
   const [dashType, setDashType] = useState('Sklad');
   const [activeProjectsCount, setActiveProjectsCount] = useState(0);
-  const [upcomingProjects, setUpcomingProjects] = useState<any[]>([]);
+  const [upcomingProjects, setUpcomingProjects] = useState<Project[]>([]);
   const [receiptStats, setReceiptStats] = useState({ count: 0, total: 0 });
-  const [myTasks, setMyTasks] = useState<any[]>([]);
+  const [myTasks, setMyTasks] = useState<Task[]>([]);
 
   // Calculate monthly hours from history
   const monthlyHours = history.reduce((acc, record) => {
