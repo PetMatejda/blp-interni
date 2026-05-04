@@ -25,6 +25,9 @@ interface Project {
   client: string;
   location: string;
   status: string;
+  material_list?: string;
+  shooting?: string;
+  preparation?: string;
   color_code?: string;
   events?: ProjectEvent[];
 }

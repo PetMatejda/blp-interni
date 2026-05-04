@@ -22,8 +22,9 @@ interface Project {
   client: string;
   location: string;
   status: string;
-  shooting?: string;
+  material_list?: string;
   color_code?: string;
+  shooting?: string;
 }
 
 interface Task {
@@ -39,7 +40,6 @@ export default function Home() {
   const { user: currentUser } = useAuth();
   const { activeSession, startSession, endSession, loading, history } = useAttendance();
   const [dashType, setDashType] = useState('Sklad');
-  const [activeProjectsCount, setActiveProjectsCount] = useState(0);
   const [upcomingProjects, setUpcomingProjects] = useState<Project[]>([]);
   const [receiptStats, setReceiptStats] = useState({ count: 0, total: 0 });
   const [myTasks, setMyTasks] = useState<Task[]>([]);
@@ -74,8 +74,6 @@ export default function Home() {
         .from('projects')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'confirmed');
-      
-      setActiveProjectsCount(projCount || 0);
 
       // 2. Fetch upcoming projects (first 2)
       const { data: projData } = await supabase
