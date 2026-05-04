@@ -21,6 +21,8 @@ interface Project {
   client: string;
   location: string;
   status: string;
+  shooting?: string;
+  color_code?: string;
 }
 
 interface Task {
