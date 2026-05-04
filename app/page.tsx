@@ -12,17 +12,25 @@ import styles from './page.module.css';
 import { useAttendance } from '@/hooks/useAttendance';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
+import { useState } from 'react';
 
 export default function Home() {
   const { activeSession, startSession, endSession, loading } = useAttendance();
+  const [dashType, setDashType] = useState('Sklad');
 
-  const handleStartPauza = () => {
-    // In this simple system, Pause is just another attendance type
-    startSession('Volno M', 'Pauza z dashboardu');
+  const handleStartPauza = async () => {
+    await startSession('Volno M', 'Pauza z dashboardu');
   };
 
-  const handleEndSession = () => {
-    endSession();
+  const handleEndSession = async () => {
+    const result = await endSession();
+    if (result.error) {
+      alert('Chyba při ukončování: ' + (result.error as any).message);
+    }
+  };
+
+  const handleStartWork = async () => {
+    await startSession(dashType);
   };
   return (
     <div className={styles.dashboard}>
@@ -122,10 +130,30 @@ export default function Home() {
               <span>Aktuálně: <strong>Nejste v práci</strong></span>
             </div>
 
+            <div className={styles.typeSelector} style={{ marginBottom: '1rem' }}>
+              <select 
+                value={dashType} 
+                onChange={(e) => setDashType(e.target.value)}
+                className={styles.dashSelect}
+                style={{ 
+                  width: '100%', 
+                  padding: '0.75rem', 
+                  borderRadius: 'var(--radius-md)', 
+                  border: '1px solid var(--border)',
+                  background: 'var(--input)',
+                  color: 'var(--foreground)'
+                }}
+              >
+                {['Travel', 'Točba', 'Rigg', 'Sklad', 'Volno M', 'Dovolená', 'Nemoc'].map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </div>
+
             <div className={styles.buttonGrid}>
-              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => startSession('Sklad')}>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleStartWork}>
                 <Play size={18} fill="currentColor" />
-                Zahájit práci
+                Zahájit: {dashType}
               </button>
             </div>
           </>

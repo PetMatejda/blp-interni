@@ -7,7 +7,9 @@ import {
   ChevronLeft, 
   ChevronRight,
   Download,
-  Plus
+  Plus,
+  Trash2,
+  Edit2
 } from 'lucide-react';
 import styles from './page.module.css';
 import { useAttendance } from '@/hooks/useAttendance';
@@ -15,10 +17,31 @@ import { format, differenceInSeconds } from 'date-fns';
 import { cs } from 'date-fns/locale';
 
 export default function AttendancePage() {
-  const { activeSession, history, loading, startSession, endSession } = useAttendance();
+  const { 
+    activeSession, 
+    history, 
+    loading, 
+    startSession, 
+    endSession, 
+    deleteRecord, 
+    updateRecord 
+  } = useAttendance();
   const [selectedType, setSelectedType] = useState('Točba');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [timer, setTimer] = useState('00:00:00');
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Opravdu chcete smazat tento záznam?')) {
+      await deleteRecord(id);
+    }
+  };
+
+  const handleEdit = async (id: string, currentComment: string | null) => {
+    const newComment = prompt('Upravit komentář:', currentComment || '');
+    if (newComment !== null) {
+      await updateRecord(id, { comment: newComment });
+    }
+  };
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -126,12 +149,13 @@ export default function AttendancePage() {
                 <th>Odchod</th>
                 <th>Celkem</th>
                 <th>Poznámka</th>
+                <th>Akce</th>
               </tr>
             </thead>
             <tbody>
               {history.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>Zatím žádné záznamy</td>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>Zatím žádné záznamy</td>
                 </tr>
               )}
               {history.map((record) => {
@@ -158,6 +182,22 @@ export default function AttendancePage() {
                     <td className={styles.timeCell}>{checkOut ? format(checkOut, 'HH:mm') : '--'}</td>
                     <td className={styles.totalCell}>{duration}</td>
                     <td className={styles.noteCell}>{record.comment || '-'}</td>
+                    <td className={styles.actionsCell}>
+                      <button 
+                        className={styles.actionBtn} 
+                        title="Upravit"
+                        onClick={() => handleEdit(record.id, record.comment)}
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button 
+                        className={`${styles.actionBtn} ${styles.deleteBtn}`} 
+                        title="Smazat"
+                        onClick={() => handleDelete(record.id)}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}

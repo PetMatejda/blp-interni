@@ -95,22 +95,70 @@ export function useAttendance() {
   };
 
   const endSession = async () => {
-    if (!activeSession) return { error: 'No active session' };
+    if (!activeSession) {
+      console.warn('No active session to end');
+      return { error: 'No active session' };
+    }
 
+    try {
+      const { data, error } = await supabase
+        .from('attendance')
+        .update({ check_out: new Date().toISOString() })
+        .eq('id', activeSession.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error ending session:', error);
+        return { error };
+      }
+
+      setActiveSession(null);
+      await fetchHistory();
+      return { data };
+    } catch (err) {
+      console.error('Exception in endSession:', err);
+      return { error: err };
+    }
+  };
+
+  const deleteRecord = async (id: string) => {
+    const { error } = await supabase
+      .from('attendance')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting record:', error);
+      return { error };
+    }
+
+    if (activeSession?.id === id) {
+      setActiveSession(null);
+    }
+    
+    await fetchHistory();
+    return { success: true };
+  };
+
+  const updateRecord = async (id: string, updates: Partial<AttendanceRecord>) => {
     const { data, error } = await supabase
       .from('attendance')
-      .update({ check_out: new Date().toISOString() })
-      .eq('id', activeSession.id)
+      .update(updates)
+      .eq('id', id)
       .select()
       .single();
 
     if (error) {
-      console.error('Error ending session:', error);
+      console.error('Error updating record:', error);
       return { error };
     }
 
-    setActiveSession(null);
-    fetchHistory();
+    if (activeSession?.id === id) {
+      setActiveSession(data);
+    }
+
+    await fetchHistory();
     return { data };
   };
 
@@ -120,6 +168,8 @@ export function useAttendance() {
     history,
     startSession,
     endSession,
+    deleteRecord,
+    updateRecord,
     refresh: () => {
       fetchActiveSession();
       fetchHistory();
