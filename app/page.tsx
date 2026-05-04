@@ -12,6 +12,7 @@ import styles from './page.module.css';
 import { useAttendance } from '@/hooks/useAttendance';
 import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -203,7 +204,7 @@ export default function Home() {
         )}
       </div>
 
-      <div className={`${styles.card} ${styles.hoursCard}`}>
+      <Link href="/attendance" className={`${styles.card} ${styles.hoursCard}`}>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Odpracováno (Tento měsíc)</span>
           <span className={styles.statValue}>{monthlyHours.toFixed(1)} h</span>
@@ -212,9 +213,9 @@ export default function Home() {
             <span>Naposledy: {lastRecordDate ? format(lastRecordDate, 'd.M. HH:mm') : '--'}</span>
           </div>
         </div>
-      </div>
+      </Link>
 
-      <div className={`${styles.card} ${styles.upcomingCard}`}>
+      <Link href="/tasks" className={`${styles.card} ${styles.upcomingCard}`}>
         <div className={styles.sectionHeader}>
           <h2 className={styles.cardTitle}>Nadcházející Projekty</h2>
         </div>
@@ -231,10 +232,10 @@ export default function Home() {
             </div>
           ))}
         </div>
-      </div>
+      </Link>
 
       <div className={styles.statsGrid}>
-        <div className={styles.card}>
+        <Link href="/tasks" className={styles.card}>
           <div className={styles.statCard}>
             <span className={styles.statLabel}>Aktivní zakázky</span>
             <span className={styles.statValue}>{activeProjectsCount}</span>
@@ -242,9 +243,9 @@ export default function Home() {
               <span>Aktuálně v běhu</span>
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div className={styles.card}>
+        <Link href="/receipts" className={styles.card}>
           <div className={styles.statCard}>
             <span className={styles.statLabel}>Moje účtenky</span>
             <span className={styles.statValue}>{receiptStats.count}</span>
@@ -253,10 +254,10 @@ export default function Home() {
               <span>Celkem {receiptStats.total.toLocaleString()} Kč</span>
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
-      <div className={`${styles.card} ${styles.tasksCard}`}>
+      <Link href="/tasks" className={`${styles.card} ${styles.tasksCard}`}>
         <h2 className={styles.cardTitle}>
           <Film size={20} />
           Moje úkoly (Projekty)
@@ -273,7 +274,7 @@ export default function Home() {
             </div>
           ))}
         </div>
-      </div>
+      </Link>
     </div>
   );
 }
