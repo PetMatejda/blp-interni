@@ -209,12 +209,12 @@ export default function ReportsPage() {
                         <User size={14} className={styles.workerIcon} />
                         {row.name}
                         {row.hasOverlap && (
-                          <AlertTriangle 
-                            size={14} 
-                            color="#ef4444" 
-                            title="Některé záznamy tohoto zaměstnance v tomto měsíci se překrývají v čase." 
-                            style={{ marginLeft: '4px' }} 
-                          />
+                          <span title="Některé záznamy tohoto zaměstnance v tomto měsíci se překrývají v čase." style={{ marginLeft: '4px', display: 'flex', alignItems: 'center' }}>
+                            <AlertTriangle 
+                              size={14} 
+                              color="#ef4444" 
+                            />
+                          </span>
                         )}
                       </div>
                     </td>

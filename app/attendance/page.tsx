@@ -176,7 +176,9 @@ export default function AttendancePage() {
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {record.hasOverlap && (
-                          <AlertTriangle size={16} className={styles.warningIcon} title="Tento záznam se překrývá s jiným!" />
+                          <span title="Tento záznam se překrývá s jiným!">
+                            <AlertTriangle size={16} className={styles.warningIcon} />
+                          </span>
                         )}
                         {format(checkIn, 'eeee, d. M.', { locale: cs })}
                       </div>
