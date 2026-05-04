@@ -110,8 +110,8 @@ export default function TasksPage() {
         events: p.project_events || []
       })) || [];
       const sorted = [...projectsWithEvents].sort((a, b) => {
-        const aDate = a.events?.length ? Math.min(...a.events.map(e => new Date(e.start_date).getTime())) : Infinity;
-        const bDate = b.events?.length ? Math.min(...b.events.map(e => new Date(e.start_date).getTime())) : Infinity;
+        const aDate = a.events?.length ? Math.min(...a.events.map((e: ProjectEvent) => new Date(e.start_date).getTime())) : Infinity;
+        const bDate = b.events?.length ? Math.min(...b.events.map((e: ProjectEvent) => new Date(e.start_date).getTime())) : Infinity;
         
         if (aDate === bDate) return 0;
         return aDate - bDate;
