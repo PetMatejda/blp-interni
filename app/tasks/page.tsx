@@ -498,6 +498,7 @@ export default function TasksPage() {
                               type,
                               start_date: isoDate,
                               end_date: isoDate
+                            });
                           }
                           await fetchProjects();
                           
