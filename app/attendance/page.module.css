@@ -391,3 +391,18 @@
   color: var(--error);
   border-color: rgba(239, 68, 68, 0.2);
 }
+
+.warningIcon {
+  color: var(--error);
+  animation: pulse 2s infinite;
+}
+
+.overlapRow {
+  background: rgba(239, 68, 68, 0.02);
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}

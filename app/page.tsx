@@ -12,11 +12,41 @@ import styles from './page.module.css';
 import { useAttendance } from '@/hooks/useAttendance';
 import { format } from 'date-fns';
 import { cs } from 'date-fns/locale';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 export default function Home() {
-  const { activeSession, startSession, endSession, loading } = useAttendance();
+  const { activeSession, startSession, endSession, loading, history } = useAttendance();
   const [dashType, setDashType] = useState('Sklad');
+  const [activeProjectsCount, setActiveProjectsCount] = useState(0);
+
+  // Calculate monthly hours from history
+  const monthlyHours = history.reduce((acc, record) => {
+    if (!record.check_out) return acc;
+    const checkIn = new Date(record.check_in);
+    const checkOut = new Date(record.check_out);
+    const now = new Date();
+    
+    // Only count records from current month
+    if (checkIn.getMonth() === now.getMonth() && checkIn.getFullYear() === now.getFullYear()) {
+      const diffHours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60);
+      return acc + diffHours;
+    }
+    return acc;
+  }, 0);
+
+  useEffect(() => {
+    const fetchProjectCount = async () => {
+      const { count, error } = await supabase
+        .from('projects')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'confirmed');
+      
+      if (!error) setActiveProjectsCount(count || 0);
+    };
+    
+    fetchProjectCount();
+  }, []);
 
   const handleStartPauza = async () => {
     await startSession('Volno M', 'Pauza z dashboardu');
@@ -32,16 +62,17 @@ export default function Home() {
   const handleStartWork = async () => {
     await startSession(dashType);
   };
+
   return (
     <div className={styles.dashboard}>
       <div className={styles.statsGrid}>
         <div className={styles.card}>
           <div className={styles.statCard}>
             <span className={styles.statLabel}>Odpracováno (Tento měsíc)</span>
-            <span className={styles.statValue}>124.5 h</span>
+            <span className={styles.statValue}>{monthlyHours.toFixed(1)} h</span>
             <div className={`${styles.statTrend} ${styles.trendUp}`}>
               <TrendingUp size={12} />
-              <span>+12% oproti min. měsíci</span>
+              <span>Z reálných dat</span>
             </div>
           </div>
         </div>
@@ -80,9 +111,9 @@ export default function Home() {
         <div className={styles.card}>
           <div className={styles.statCard}>
             <span className={styles.statLabel}>Aktivní zakázky</span>
-            <span className={styles.statValue}>8</span>
+            <span className={styles.statValue}>{activeProjectsCount}</span>
             <div className={styles.statTrend}>
-              <span>3 končí tento týden</span>
+              <span>Aktuálně v běhu</span>
             </div>
           </div>
         </div>

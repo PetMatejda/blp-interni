@@ -11,6 +11,7 @@ export interface AttendanceRecord {
   check_out: string | null;
   type: string;
   comment: string | null;
+  hasOverlap?: boolean;
 }
 
 export function useAttendance() {
@@ -18,6 +19,25 @@ export function useAttendance() {
   const [activeSession, setActiveSession] = useState<AttendanceRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
+
+  const checkOverlaps = (records: AttendanceRecord[]) => {
+    return records.map(record => {
+      if (!record.check_out) return { ...record, hasOverlap: false };
+      
+      const start = new Date(record.check_in).getTime();
+      const end = new Date(record.check_out).getTime();
+      
+      const hasOverlap = records.some(other => {
+        if (other.id === record.id || !other.check_out) return false;
+        const otherStart = new Date(other.check_in).getTime();
+        const otherEnd = new Date(other.check_out).getTime();
+        
+        return start < otherEnd && otherStart < end;
+      });
+      
+      return { ...record, hasOverlap };
+    });
+  };
 
   const fetchActiveSession = useCallback(async () => {
     if (!user) return;
@@ -47,12 +67,13 @@ export function useAttendance() {
       .select('*')
       .eq('user_id', user.id)
       .order('check_in', { ascending: false })
-      .limit(20);
+      .limit(50);
 
     if (error) {
       console.error('Error fetching history:', error);
     } else {
-      setHistory(data || []);
+      const historyWithOverlaps = checkOverlaps(data || []);
+      setHistory(historyWithOverlaps);
     }
   }, [user]);
 

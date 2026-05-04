@@ -28,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) ensureProfile(session.user);
       setLoading(false);
     };
 
@@ -40,11 +41,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       
       if (session) {
+        ensureProfile(session.user);
         if (pathname === '/login') {
           router.push('/');
         }
       } else {
-        router.push('/login');
+        if (pathname !== '/login' && !pathname.includes('/auth/callback')) {
+          router.push('/login');
+        }
       }
     });
 
@@ -52,6 +56,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
     };
   }, [router, pathname]);
+
+  const ensureProfile = async (user: User) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!data && !error) {
+      // Create profile
+      await supabase.from('profiles').insert([
+        { 
+          id: user.id, 
+          full_name: user.user_metadata.full_name || user.email,
+          email: user.email,
+          role: user.email === 'petmatejda@gmail.com' ? 'admin' : 'employee'
+        }
+      ]);
+    }
+  };
 
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({

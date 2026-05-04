@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Search, 
   Plus, 
@@ -17,55 +17,83 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import styles from './page.module.css';
-
-const MOCK_PROJECTS = [
-  {
-    id: 1,
-    title: 'Tom Ford Movie',
-    client: 'Riccardo',
-    location: 'Regia Caserta',
-    preparation: 'Pátek 6.3. večer',
-    shooting: '9, 11, 12.3.',
-    material: '1x LED RGB balloon 3,7m, 2x LED RGB Cloud 8x6, 6x LED Ball 1,4m',
-    status: 'Confirmed',
-    color: '#dcfce7' // Greenish
-  },
-  {
-    id: 2,
-    title: 'Stillking - Schnapps',
-    client: 'Stillking',
-    location: 'Kostel Gabriel',
-    preparation: '8-9.3. neděle/pondělí',
-    shooting: '11.3. - 13.3.',
-    material: '4x Cloud 8x6 RGBWW, 20 flatlights 8x4',
-    status: 'Confirmed',
-    color: '#f3e8ff' // Purpleish
-  },
-  {
-    id: 3,
-    title: 'GALAXY TWILIGHT',
-    client: 'GALAXY',
-    location: 'HARRIS OFFICE',
-    preparation: 'Úterý 10.3.',
-    shooting: '12.3. čtvrtek',
-    material: '3x flatlight 8x4, 4ks flatlight 4x4, 1pc Cloud 4,5x 4x5 with helium',
-    status: 'Pending',
-    color: '#fef3c7' // Yellowish
-  }
-];
-
-const MOCK_SCHEDULE = [
-  { name: 'Marek Rad.', assignments: { '4.5.': 'Camilla', '5.5.': 'Camilla', '7.5.': 'Armelov', '8.5.': 'Armelov' } },
-  { name: 'Petr Matej.', assignments: { '4.5.': 'Camilla', '8.5.': 'Armelov', '9.5.': 'Armelov' } },
-  { name: 'Jirka Hollan', assignments: { '4.5.': 'Sklad', '5.5.': 'Sklad', '6.5.': 'Sklad' } },
-];
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/components/AuthProvider';
 
 export default function TasksPage() {
+  const { user: currentUser } = useAuth();
   const [view, setView] = useState<'list' | 'schedule'>('list');
-  const [selectedProject, setSelectedProject] = useState<typeof MOCK_PROJECTS[0] | null>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [editingAssignment, setEditingAssignment] = useState<{name: string, date: string} | null>(null);
-  const [materialList, setMaterialList] = useState(MOCK_PROJECTS[0].material.split(', '));
+  const [materialList, setMaterialList] = useState<string[]>([]);
   const [newMaterial, setNewMaterial] = useState('');
+  const [assignments, setAssignments] = useState<any[]>([]);
+
+  const fetchProjects = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) console.error('Error fetching projects:', error);
+    else setProjects(data || []);
+  }, []);
+
+  const fetchProfiles = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*');
+    
+    if (error) console.error('Error fetching profiles:', error);
+    else setProfiles(data || []);
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      await Promise.all([fetchProjects(), fetchProfiles()]);
+      setLoading(false);
+    };
+    init();
+  }, [fetchProjects, fetchProfiles]);
+
+  const fetchAssignments = useCallback(async (projectId: string) => {
+    const { data, error } = await supabase
+      .from('assignments')
+      .select('*, profiles(*)')
+      .eq('project_id', projectId);
+    
+    if (error) console.error('Error fetching assignments:', error);
+    else setAssignments(data || []);
+  }, []);
+
+  useEffect(() => {
+    if (selectedProject) {
+      fetchAssignments(selectedProject.id);
+    }
+  }, [selectedProject, fetchAssignments]);
+
+  const handleAddMember = async () => {
+    const userId = prompt('Zadejte ID uživatele nebo vyberte ze seznamu (v budoucnu):');
+    if (!userId || !selectedProject) return;
+
+    const { error } = await supabase
+      .from('assignments')
+      .insert([{ 
+        project_id: selectedProject.id, 
+        user_id: userId,
+        date: new Date().toISOString().split('T')[0] // Default to today
+      }]);
+
+    if (error) {
+      alert('Chyba při přidávání člena: ' + error.message);
+    } else {
+      fetchAssignments(selectedProject.id);
+    }
+  };
 
   const handleAddMaterial = () => {
     if (newMaterial.trim()) {
@@ -117,15 +145,17 @@ export default function TasksPage() {
           </div>
 
           <div className={styles.projectGrid}>
-            {MOCK_PROJECTS.map(project => (
-              <div key={project.id} className={styles.projectCard} style={{ borderLeftColor: project.color }}>
+            {loading && <p>Načítání projektů...</p>}
+            {!loading && projects.length === 0 && <p>Žádné projekty nenalezeny.</p>}
+            {projects.map(project => (
+              <div key={project.id} className={styles.projectCard} style={{ borderLeftColor: project.color_code || '#cbd5e1' }}>
                 <div className={styles.projectHeader}>
                   <div className={styles.projectInfo}>
                     <span className={styles.clientBadge}>{project.client}</span>
                     <h3>{project.title}</h3>
                   </div>
-                  <span className={`${styles.statusBadge} ${styles[project.status.toLowerCase()]}`}>
-                    {project.status}
+                  <span className={`${styles.statusBadge} ${styles[project.status?.toLowerCase() || 'pending']}`}>
+                    {project.status || 'Pending'}
                   </span>
                 </div>
                 
@@ -136,15 +166,11 @@ export default function TasksPage() {
                   </div>
                   <div className={styles.detailItem}>
                     <CalendarIcon size={16} />
-                    <span><strong>Příprava:</strong> {project.preparation}</span>
-                  </div>
-                  <div className={styles.detailItem}>
-                    <CalendarIcon size={16} />
-                    <span><strong>Točení:</strong> {project.shooting}</span>
+                    <span><strong>Točení:</strong> {project.shooting || 'Termín neurčen'}</span>
                   </div>
                   <div className={styles.detailItem}>
                     <Package size={16} />
-                    <span className={styles.materialText}>{project.material.substring(0, 60)}...</span>
+                    <span className={styles.materialText}>{project.material_list?.substring(0, 60) || 'Žádný materiál'}...</span>
                   </div>
                 </div>
 
@@ -152,15 +178,14 @@ export default function TasksPage() {
                   <div className={styles.assignedTeam}>
                     <Users size={16} />
                     <div className={styles.avatars}>
-                      <div className={styles.avatarMini} title="Marek R.">MR</div>
-                      <div className={styles.avatarMini} title="Petr M.">PM</div>
+                      <div className={styles.avatarMini} title="Více info v detailu">?</div>
                     </div>
                   </div>
                   <button 
                     className={styles.detailsBtn}
                     onClick={() => {
                       setSelectedProject(project);
-                      setMaterialList(project.material.split(', '));
+                      setMaterialList(project.material_list ? project.material_list.split(', ') : []);
                     }}
                   >
                     Detail projektu
@@ -294,23 +319,48 @@ export default function TasksPage() {
                 <div className={styles.section}>
                   <h3><Users size={20} /> Přiřazený tým</h3>
                   <div className={styles.teamGrid}>
-                    <div className={styles.teamMember}>
-                      <div className={styles.avatar}>MR</div>
-                      <div className={styles.memberInfo}>
-                        <strong>Marek Rad.</strong>
-                        <span>Main Rigger</span>
+                    {assignments.map((assignment) => (
+                      <div key={assignment.id} className={styles.teamMember}>
+                        <div className={styles.avatar}>
+                          {assignment.profiles?.full_name?.substring(0, 2).toUpperCase() || '??'}
+                        </div>
+                        <div className={styles.memberInfo}>
+                          <strong>{assignment.profiles?.full_name || 'Neznámý'}</strong>
+                          <span>{assignment.note || 'Člen týmu'}</span>
+                        </div>
+                        <button className={styles.removeMember}><Trash2 size={16} /></button>
                       </div>
-                      <button className={styles.removeMember}><Trash2 size={16} /></button>
+                    ))}
+                    
+                    <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Přidat člena:</label>
+                      <select 
+                        className={styles.selectField}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            const selectedUser = profiles.find(p => p.id === e.target.value);
+                            if (selectedUser && confirm(`Přidat uživatele ${selectedUser.full_name} k projektu?`)) {
+                              (async () => {
+                                const { error } = await supabase
+                                  .from('assignments')
+                                  .insert([{ 
+                                    project_id: selectedProject.id, 
+                                    user_id: selectedUser.id,
+                                    date: new Date().toISOString().split('T')[0]
+                                  }]);
+                                if (error) alert(error.message);
+                                else fetchAssignments(selectedProject.id);
+                              })();
+                            }
+                          }
+                        }}
+                      >
+                        <option value="">-- Vyberte zaměstnance --</option>
+                        {profiles.map(profile => (
+                          <option key={profile.id} value={profile.id}>{profile.full_name || profile.id}</option>
+                        ))}
+                      </select>
                     </div>
-                    <div className={styles.teamMember}>
-                      <div className={styles.avatar}>PM</div>
-                      <div className={styles.memberInfo}>
-                        <strong>Petr Matej.</strong>
-                        <span>Technik</span>
-                      </div>
-                      <button className={styles.removeMember}><Trash2 size={16} /></button>
-                    </div>
-                    <button className={styles.addMemberBtn}><Plus size={18} /> Přidat člena</button>
                   </div>
                 </div>
               </div>

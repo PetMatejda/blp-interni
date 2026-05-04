@@ -9,7 +9,8 @@ import {
   Download,
   Plus,
   Trash2,
-  Edit2
+  Edit2,
+  AlertTriangle
 } from 'lucide-react';
 import styles from './page.module.css';
 import { useAttendance } from '@/hooks/useAttendance';
@@ -171,8 +172,15 @@ export default function AttendancePage() {
                 }
 
                 return (
-                  <tr key={record.id}>
-                    <td>{format(checkIn, 'eeee, d. M.', { locale: cs })}</td>
+                  <tr key={record.id} className={record.hasOverlap ? styles.overlapRow : ''}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {record.hasOverlap && (
+                          <AlertTriangle size={16} className={styles.warningIcon} title="Tento záznam se překrývá s jiným!" />
+                        )}
+                        {format(checkIn, 'eeee, d. M.', { locale: cs })}
+                      </div>
+                    </td>
                     <td>
                       <span className={`${styles.typeBadge} ${styles[`type${record.type.replace(' ', '')}`]}`}>
                         {record.type}
