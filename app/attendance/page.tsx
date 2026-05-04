@@ -8,17 +8,27 @@ import {
   ChevronRight,
   Download,
   Plus,
+  Trash2,
   Edit2,
   AlertTriangle,
   X,
   Save
 } from 'lucide-react';
 import styles from './page.module.css';
-import { useAttendance } from '@/hooks/useAttendance';
+import { useAttendance, AttendanceRecord } from '@/hooks/useAttendance';
 import { format, differenceInSeconds, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from 'date-fns';
 import { cs } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthProvider';
+
+interface BulkDayData {
+  id: string | null;
+  date: Date;
+  type: string;
+  check_in: string;
+  check_out: string;
+  comment: string;
+}
 
 export default function AttendancePage() {
   const { 
@@ -36,7 +46,7 @@ export default function AttendancePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [bulkDate, setBulkDate] = useState(new Date());
-  const [bulkData, setBulkData] = useState<any[]>([]);
+  const [bulkData, setBulkData] = useState<BulkDayData[]>([]);
   const [timer, setTimer] = useState('00:00:00');
 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
@@ -55,8 +65,7 @@ export default function AttendancePage() {
     comment: ''
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleEdit = (record: any) => {
+  const handleEdit = (record: AttendanceRecord) => {
     const checkInDate = new Date(record.check_in);
     setFormData({
       date: format(checkInDate, 'yyyy-MM-dd'),
@@ -74,7 +83,7 @@ export default function AttendancePage() {
     const end = endOfMonth(bulkDate);
     const days = eachDayOfInterval({ start, end });
 
-    const newBulkData = days.map(day => {
+    const newBulkData: BulkDayData[] = days.map(day => {
       // Find existing record for this day
       const existing = history.find(h => isSameDay(new Date(h.check_in), day));
       
@@ -97,9 +106,9 @@ export default function AttendancePage() {
     }
   }, [bulkDate, isBulkModalOpen, prepareBulkData]);
 
-  const updateBulkRow = (index: number, field: string, value: string) => {
+  const updateBulkRow = (index: number, field: keyof BulkDayData, value: string) => {
     const newData = [...bulkData];
-    newData[index][field] = value;
+    (newData[index] as any)[field] = value;
     setBulkData(newData);
   };
 
