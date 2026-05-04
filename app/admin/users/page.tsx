@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { createBrowserClient } from '@supabase/ssr';
 import styles from './page.module.css';
@@ -8,9 +8,16 @@ import { User, Shield, ShieldAlert, Trash2, Edit } from 'lucide-react';
 
 const ADMIN_EMAIL = 'petmatejda@gmail.com';
 
+interface Profile {
+  id: string;
+  full_name: string | null;
+  role: 'admin' | 'employee';
+  updated_at: string;
+}
+
 export default function UserManagementPage() {
   const { user } = useAuth();
-  const [profiles, setProfiles] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -19,46 +26,48 @@ export default function UserManagementPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  useEffect(() => {
-    if (user?.email === ADMIN_EMAIL) {
-      fetchProfiles();
-    } else if (user) {
-      setLoading(false);
-    }
-  }, [user]);
-
-  async function fetchProfiles() {
+  const fetchProfiles = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
         .order('role', { ascending: true });
 
-      if (error) throw error;
-      setProfiles(data || []);
-    } catch (err: any) {
+      if (fetchError) throw fetchError;
+      setProfiles((data as Profile[]) || []);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error('Error fetching profiles:', err);
-      setError(err.message);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  }
+  }, [supabase]);
+
+  useEffect(() => {
+    if (user?.email?.toLowerCase() === ADMIN_EMAIL) {
+      fetchProfiles();
+    } else if (user) {
+      setLoading(false);
+    }
+  }, [user, fetchProfiles]);
 
   async function toggleRole(profileId: string, currentRole: string) {
     if (!confirm('Opravdu chcete změnit roli tohoto uživatele?')) return;
 
     const newRole = currentRole === 'admin' ? 'employee' : 'admin';
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ role: newRole })
         .eq('id', profileId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
       fetchProfiles();
-    } catch (err: any) {
-      alert('Chyba při změně role: ' + err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      alert('Chyba při změně role: ' + errorMessage);
     }
   }
 
@@ -66,7 +75,7 @@ export default function UserManagementPage() {
     return <div className={styles.container}><p>Načítání...</p></div>;
   }
 
-  if (user?.email !== ADMIN_EMAIL) {
+  if (user?.email?.toLowerCase() !== ADMIN_EMAIL) {
     return (
       <div className={styles.container}>
         <div className={styles.error}>
@@ -88,7 +97,7 @@ export default function UserManagementPage() {
       <div className={styles.adminCard}>
         {error && (
           <div className={styles.error} style={{ marginBottom: '1rem', padding: '1rem' }}>
-            Chyba: {error}. Ujistěte se, že jste v Supabase spustili SQL kód pro vytvoření tabulky 'profiles'.
+            Chyba: {error}. Ujistěte se, že jste v Supabase spustili SQL kód pro vytvoření tabulky &apos;profiles&apos;.
           </div>
         )}
 

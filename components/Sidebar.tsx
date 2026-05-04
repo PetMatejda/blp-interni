@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { 
   Home, 
   Clock, 
-  FileText, 
   Briefcase, 
   BarChart3, 
   Settings,
@@ -24,7 +23,7 @@ const navItems = [
 
 export default function Sidebar() {
   const { signOut, user } = useAuth();
-  const isAdmin = user?.email === 'petmatejda@gmail.com';
+  const isAdmin = user?.email?.toLowerCase() === 'petmatejda@gmail.com';
 
   const finalNavItems = [...navItems];
   if (isAdmin) {

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { 
   Search, 
   Plus, 
-  Filter, 
   Calendar as CalendarIcon, 
   List, 
   MapPin, 
@@ -13,7 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Edit2,
   Trash2,
   Save,
   CheckCircle2

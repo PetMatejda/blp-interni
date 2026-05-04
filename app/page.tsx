@@ -1,10 +1,8 @@
 import { 
   Clock, 
-  CheckCircle2, 
   AlertCircle, 
   TrendingUp, 
-  Film, 
-  FileText 
+  Film 
 } from 'lucide-react';
 import styles from './page.module.css';
 

@@ -2,15 +2,12 @@
 
 import { useState } from 'react';
 import { 
-  Clock, 
   Play, 
   Square, 
-  Calendar, 
   ChevronLeft, 
   ChevronRight,
   Download,
-  Plus,
-  Type
+  Plus
 } from 'lucide-react';
 import styles from './page.module.css';
 

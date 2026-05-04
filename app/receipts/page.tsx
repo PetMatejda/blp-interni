@@ -6,12 +6,10 @@ import {
   Upload, 
   FileText, 
   Check, 
-  X, 
   Info, 
   DollarSign, 
   Calendar as CalendarIcon,
   CreditCard,
-  User,
   Search,
   Eye,
   Filter
@@ -61,12 +59,11 @@ const ADMIN_EMAIL = 'petmatejda@gmail.com';
 
 export default function ReceiptsPage() {
   const { user } = useAuth();
-  const [isScanning, setIsScanning] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'upload' | 'confirm'>('upload');
   
-  const isUserAdmin = user?.email === ADMIN_EMAIL;
+  const isUserAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
   const [isAdmin, setIsAdmin] = useState(false); 
 
   // OCR simulation state
@@ -165,6 +162,7 @@ export default function ReceiptsPage() {
           ) : (
             <div className={styles.confirmView}>
               <div className={styles.receiptPreview}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={capturedImage!} alt="Receipt" />
                 {isProcessing && (
                   <div className={styles.ocrOverlay}>
