@@ -23,7 +23,13 @@ const navItems = [
 ];
 
 export default function Sidebar() {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const isAdmin = user?.email === 'petmatejda@gmail.com';
+
+  const finalNavItems = [...navItems];
+  if (isAdmin) {
+    finalNavItems.push({ icon: Settings, label: 'Správa uživatelů', href: '/admin/users' });
+  }
 
   return (
     <aside className={styles.sidebar}>
@@ -33,7 +39,7 @@ export default function Sidebar() {
       </div>
       
       <nav className={styles.nav}>
-        {navItems.map((item) => (
+        {finalNavItems.map((item) => (
           <Link key={item.href} href={item.href} className={styles.navLink}>
             <item.icon size={20} />
             <span>{item.label}</span>

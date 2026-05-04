@@ -55,12 +55,19 @@ const MOCK_RECEIPTS: Receipt[] = [
   }
 ];
 
+import { useAuth } from '@/components/AuthProvider';
+
+const ADMIN_EMAIL = 'petmatejda@gmail.com';
+
 export default function ReceiptsPage() {
+  const { user } = useAuth();
   const [isScanning, setIsScanning] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [step, setStep] = useState<'upload' | 'confirm'>('upload');
-  const [isAdmin, setIsAdmin] = useState(false); // Toggle for demo
+  
+  const isUserAdmin = user?.email === ADMIN_EMAIL;
+  const [isAdmin, setIsAdmin] = useState(false); 
 
   // OCR simulation state
   const [extractedData, setExtractedData] = useState({
@@ -121,9 +128,11 @@ export default function ReceiptsPage() {
           <h2>Skenování účtenek</h2>
           <p>Vyfoťte nebo nahrajte doklad pro proplacení nebo evidenci nákladů.</p>
         </div>
-        <button className={styles.adminToggle} onClick={() => setIsAdmin(!isAdmin)}>
-          {isAdmin ? 'Zobrazit moje účtenky' : 'Administrace (Admin View)'}
-        </button>
+        {isUserAdmin && (
+          <button className={styles.adminToggle} onClick={() => setIsAdmin(!isAdmin)}>
+            {isAdmin ? 'Zobrazit moje účtenky' : 'Administrace (Admin View)'}
+          </button>
+        )}
       </div>
 
       {!isAdmin ? (
