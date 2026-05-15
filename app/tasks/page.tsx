@@ -774,7 +774,9 @@ export default function TasksPage() {
                             if (e.target.value) {
                               const selectedUser = profiles.find(p => p.id === e.target.value);
                               if (selectedUser) {
-                                const targetDate = selectedProject.shooting ? selectedProject.shooting.split(' ')[0] : new Date().toISOString().split('T')[0];
+                                const targetDate = selectedProject.events && selectedProject.events.length > 0 
+                                  ? selectedProject.events[0].start_date 
+                                  : new Date().toISOString().split('T')[0];
                                 if (confirm(`Přidat uživatele ${selectedUser.full_name} k projektu na den ${targetDate}?`)) {
                                   (async () => {
                                     const { error } = await supabase
