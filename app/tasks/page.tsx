@@ -36,7 +36,7 @@ interface Project {
 interface ProjectEvent {
   id: string;
   project_id: string;
-  type: 'Rigging' | 'Točba' | 'Travel (Tam)' | 'Travel (Zpět)' | 'Derigging' | 'Preparation';
+  type: 'Rigging' | 'Shooting' | 'Travel' | 'Derigging' | 'Preparation';
   start_date: string;
   end_date: string;
   note?: string;
@@ -584,11 +584,11 @@ export default function TasksPage() {
                             const isoDate = format(date, 'yyyy-MM-dd');
                             
                             const context = text.substring(Math.max(0, match.index! - 20), Math.min(text.length, match.index! + 30)).toLowerCase();
-                            let type: ProjectEvent['type'] = 'Točba';
+                            let type: ProjectEvent['type'] = 'Shooting';
                             if (context.includes('rig') || context.includes('stavba')) type = 'Rigging';
                             if (context.includes('derig') || context.includes('bour')) type = 'Derigging';
-                            if (context.includes('trav') || context.includes('ces') || context.includes('tam')) type = 'Travel (Tam)';
-                            if (context.includes('zpět') || context.includes('návrat')) type = 'Travel (Zpět)';
+                            if (context.includes('trav') || context.includes('ces') || context.includes('tam')) type = 'Travel';
+                            if (context.includes('zpět') || context.includes('návrat')) type = 'Travel';
                             if (context.includes('příp') || context.includes('prep')) type = 'Preparation';
 
                             await supabase.from('project_events').insert({
@@ -624,7 +624,9 @@ export default function TasksPage() {
                   <div className={styles.eventList}>
                     {selectedProject.events?.map((event, idx) => (
                       <div key={idx} className={styles.eventItem}>
-                        <span className={styles.eventType}>{event.type}</span>
+                        <span className={styles.eventType}>
+                          {event.type === 'Shooting' ? 'Točba' : event.type === 'Preparation' ? 'Příprava' : event.type}
+                        </span>
                         <span className={styles.eventDate}>
                           {format(new Date(event.start_date), 'd.M.')} 
                           {event.start_date !== event.end_date && ` - ${format(new Date(event.end_date), 'd.M.')}`}
@@ -648,9 +650,8 @@ export default function TasksPage() {
                   <div className={styles.addEventForm}>
                     <select id="newEventType" className={styles.miniSelect}>
                       <option value="Rigging">Rigging</option>
-                      <option value="Točba">Točba</option>
-                      <option value="Travel (Tam)">Travel (Tam)</option>
-                      <option value="Travel (Zpět)">Travel (Zpět)</option>
+                      <option value="Shooting">Točba</option>
+                      <option value="Travel">Travel</option>
                       <option value="Derigging">Derigging</option>
                       <option value="Preparation">Příprava</option>
                     </select>
