@@ -546,9 +546,17 @@ export default function AttendancePage() {
                 </thead>
                 <tbody>
                   {bulkData.map((row, idx) => (
-                    <tr key={idx} className={row.type ? styles.rowFilled : ''}>
+                    <tr 
+                      key={idx} 
+                      className={`${row.type ? styles.rowFilled : ''} ${isWeekend(row.date) || isHoliday(row.date) ? styles.weekendRow : ''}`}
+                    >
                       <td className={styles.bulkDateCol}>
                         {format(row.date, 'eeeeee d.M.', { locale: cs })}
+                        {(isWeekend(row.date) || isHoliday(row.date)) && (
+                          <span className={styles.weekendBadge}>
+                            {isHoliday(row.date) ? 'Svátek' : 'Víkend'}
+                          </span>
+                        )}
                       </td>
                       <td data-label="Typ">
                         <select 

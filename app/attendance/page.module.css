@@ -622,6 +622,21 @@
   font-size: 0.9rem;
 }
 
+.weekendRow {
+  background-color: rgba(239, 68, 68, 0.03); /* Subtle red tint */
+}
+
+.weekendBadge {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  background: var(--error);
+  color: white;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 @media (max-width: 768px) {
   .bulkModal {
     width: 98% !important;
