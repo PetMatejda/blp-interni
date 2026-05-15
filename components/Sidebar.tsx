@@ -10,7 +10,8 @@ import {
   Settings,
   LogOut,
   Receipt,
-  X
+  X,
+  Clapperboard
 } from 'lucide-react';
 import styles from './Sidebar.module.css';
 import { useAuth } from './AuthProvider';
@@ -41,9 +42,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
       <div className={styles.logo}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="BLP Logo" className={styles.logoImage} />
-        <span className={styles.logoText}>Interní</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 'bold' }}>
+          <Clapperboard size={28} strokeWidth={2.5} />
+          <span style={{ fontSize: '1.4rem', letterSpacing: '1px' }}>B.L.P.</span>
+        </div>
         {onClose && (
           <button className={styles.mobileClose} onClick={onClose}>
             <X size={20} />

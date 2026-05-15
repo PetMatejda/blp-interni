@@ -81,6 +81,78 @@
   cursor: not-allowed;
 }
 
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: var(--secondary);
+  font-size: 0.85rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.divider::before {
+  margin-right: .5em;
+}
+
+.divider::after {
+  margin-left: .5em;
+}
+
+.emailForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.input {
+  width: 100%;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.emailButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.emailButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.emailButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .footer {
   margin-top: 3rem;
   color: #444;

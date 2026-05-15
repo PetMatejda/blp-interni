@@ -11,7 +11,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  const isLoginPage = pathname === '/login';
+  const isAuthPage = pathname === '/login' || pathname === '/reset-password' || pathname?.startsWith('/auth/');
 
   // Close sidebar on route change
   useEffect(() => {
@@ -33,12 +33,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     );
   }
 
-  // If on login page, just show children
-  if (isLoginPage) {
+  // If on login or reset-password page, just show children
+  if (isAuthPage) {
     return <>{children}</>;
   }
 
-  // If not logged in and not on login page, children will be empty because of AuthProvider redirect,
+  // If not logged in and not on auth pages, children will be empty because of AuthProvider redirect,
   // but we should still handle the layout carefully.
   if (!user) {
     return <>{children}</>;

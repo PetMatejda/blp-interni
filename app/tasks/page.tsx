@@ -62,7 +62,7 @@ interface Assignment {
 
 
 export default function TasksPage() {
-  const [view, setView] = useState<'list' | 'schedule'>('list');
+  const [view, setView] = useState<'list' | 'schedule' | 'calendar'>('list');
   const [projects, setProjects] = useState<Project[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +95,33 @@ export default function TasksPage() {
     newDate.setMonth(newDate.getMonth() + delta);
     setCurrentDate(newDate);
   };
+
+  const getProjectDates = useCallback((project: Project) => {
+    const dates = new Set<string>();
+    
+    if (project.events) {
+      project.events.forEach(e => {
+        dates.add(e.start_date);
+        if (e.end_date && e.end_date !== e.start_date) {
+            dates.add(e.end_date); 
+        }
+      });
+    }
+
+    const text = `${project.shooting || ''} ${project.preparation || ''}`;
+    const dateRegex = /(\d{1,2})\.\s?(\d{1,2})\.(?:\s?(\d{4}))?/g;
+    const matches = [...text.matchAll(dateRegex)];
+    for (const match of matches) {
+      const day = parseInt(match[1]);
+      const month = parseInt(match[2]) - 1; 
+      const year = match[3] ? parseInt(match[3]) : currentDate.getFullYear();
+      
+      const isoDate = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+      dates.add(isoDate);
+    }
+    
+    return Array.from(dates);
+  }, [currentDate]);
 
   const fetchProjects = useCallback(async () => {
     const { data, error } = await supabase
@@ -251,10 +278,17 @@ export default function TasksPage() {
             Seznam projektů
           </button>
           <button 
+            className={`${styles.toggleBtn} ${view === 'calendar' ? styles.active : ''}`}
+            onClick={() => setView('calendar')}
+          >
+            <CalendarIcon size={18} />
+            Kalendář projektů
+          </button>
+          <button 
             className={`${styles.toggleBtn} ${view === 'schedule' ? styles.active : ''}`}
             onClick={() => setView('schedule')}
           >
-            <CalendarIcon size={18} />
+            <Users size={18} />
             Harmonogram týmu
           </button>
         </div>
@@ -337,6 +371,70 @@ export default function TasksPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      ) : view === 'calendar' ? (
+        <div className={styles.scheduleView}>
+          <div className={styles.scheduleHeader}>
+            <div className={styles.scheduleNav}>
+              <button onClick={() => changeMonth(-1)}><ChevronLeft size={20} /></button>
+              <h3 style={{ textTransform: 'capitalize' }}>{getMonthName(currentDate)}</h3>
+              <button onClick={() => changeMonth(1)}><ChevronRight size={20} /></button>
+            </div>
+          </div>
+          
+          <div className={styles.monthGrid}>
+            {['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'].map(day => (
+              <div key={day} className={styles.monthGridHeader}>{day}</div>
+            ))}
+            
+            {(() => {
+              const year = currentDate.getFullYear();
+              const month = currentDate.getMonth();
+              const firstDay = new Date(year, month, 1);
+              let startingDay = firstDay.getDay() - 1;
+              if (startingDay === -1) startingDay = 6;
+              
+              const daysInMonth = getDaysInMonth(currentDate);
+              const days = [];
+              
+              for (let i = 0; i < startingDay; i++) {
+                days.push(<div key={`empty-${i}`} className={styles.monthGridCellEmpty}></div>);
+              }
+              
+              for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                
+                const dayProjects = projects.filter(p => {
+                  const pDates = getProjectDates(p);
+                  return pDates.includes(dateStr);
+                });
+                
+                days.push(
+                  <div key={`day-${day}`} className={styles.monthGridCell}>
+                    <div className={styles.monthGridDayNum}>{day}</div>
+                    <div className={styles.monthGridProjects}>
+                      {dayProjects.map(p => (
+                        <div 
+                          key={p.id} 
+                          className={styles.monthProjectBadge}
+                          style={{ backgroundColor: p.color_code || '#cbd5e1' }}
+                          onClick={() => {
+                            setSelectedProject(p);
+                            setMaterialList(p.material_list ? p.material_list.split(', ') : []);
+                          }}
+                        >
+                          <span className={styles.monthProjectClient}>{p.client}</span>
+                          <span className={styles.monthProjectTitle}>{p.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              
+              return days;
+            })()}
           </div>
         </div>
       ) : (

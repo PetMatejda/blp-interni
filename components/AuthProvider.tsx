@@ -19,6 +19,8 @@ type AuthContextType = {
   loading: boolean;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithPassword: (email: string, password: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -70,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           setProfile(null);
-          if (pathname !== '/login' && !pathname.includes('/auth/callback')) {
+          if (pathname !== '/login' && !pathname.includes('/auth/callback') && pathname !== '/reset-password') {
             router.push('/login');
           }
         }
@@ -132,6 +134,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
+  const signInWithPassword = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password',
+    });
+    if (error) throw error;
+  };
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
@@ -139,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signOut, signInWithGoogle, signInWithPassword, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
